@@ -1,0 +1,245 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.game-container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    max-width: 1200px;
+    width: 100%;
+}
+
+.game-header {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+.game-header h1 {
+    font-size: 2.5em;
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.game-info {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.info-item {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-weight: bold;
+    backdrop-filter: blur(10px);
+}
+
+.game-main {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+}
+
+#gameCanvas {
+    border: 3px solid #34495e;
+    border-radius: 10px;
+    background: #f8f9fa;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.game-sidebar {
+    width: 250px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.tower-selection {
+    background: #ecf0f1;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.tower-selection h3 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    text-align: center;
+    font-size: 1.2em;
+}
+
+.tower-option {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.tower-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    border-color: #3498db;
+}
+
+.tower-option.selected {
+    border-color: #e74c3c;
+    background: #fff5f5;
+}
+
+.tower-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 1.2em;
+}
+
+.basic-tower {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.sniper-tower {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.cannon-tower {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+}
+
+.tower-info {
+    flex: 1;
+}
+
+.tower-cost {
+    font-size: 0.9em;
+    color: #7f8c8d;
+    margin-top: 5px;
+}
+
+.game-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.game-controls button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#startWave {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    color: white;
+}
+
+#startWave:hover {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    transform: translateY(-2px);
+}
+
+#pauseGame {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+}
+
+#pauseGame:hover {
+    background: linear-gradient(135deg, #e67e22, #f39c12);
+    transform: translateY(-2px);
+}
+
+#restartGame {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+#restartGame:hover {
+    background: linear-gradient(135deg, #c0392b, #e74c3c);
+    transform: translateY(-2px);
+}
+
+.game-status {
+    background: #ecf0f1;
+    border-radius: 10px;
+    padding: 20px;
+    min-height: 100px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+#gameMessage {
+    color: #2c3e50;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1.5;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+    .game-main {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .game-sidebar {
+        width: 100%;
+        max-width: 800px;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+    
+    .tower-selection {
+        flex: 1;
+    }
+    
+    .game-controls {
+        flex: 0 0 auto;
+    }
+    
+    .game-status {
+        flex: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .game-sidebar {
+        flex-direction: column;
+    }
+    
+    #gameCanvas {
+        width: 100%;
+        max-width: 600px;
+        height: auto;
+    }
+}

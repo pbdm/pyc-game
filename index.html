@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>保护基地 - 塔防游戏</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1>保护基地</h1>
+            <div class="game-info">
+                <div class="info-item">
+                    <span>生命值:</span>
+                    <span id="health">100</span>
+                </div>
+                <div class="info-item">
+                    <span>金币:</span>
+                    <span id="money">500</span>
+                </div>
+                <div class="info-item">
+                    <span>波数:</span>
+                    <span id="wave">1</span>
+                </div>
+                <div class="info-item">
+                    <span>分数:</span>
+                    <span id="score">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="game-main">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+            
+            <div class="game-sidebar">
+                <div class="tower-selection">
+                    <h3>选择防御塔</h3>
+                    <div class="tower-option" data-tower="basic">
+                        <div class="tower-icon basic-tower"></div>
+                        <div class="tower-info">
+                            <div>基础塔</div>
+                            <div class="tower-cost">100金币</div>
+                        </div>
+                    </div>
+                    <div class="tower-option" data-tower="sniper">
+                        <div class="tower-icon sniper-tower"></div>
+                        <div class="tower-info">
+                            <div>狙击塔</div>
+                            <div class="tower-cost">200金币</div>
+                        </div>
+                    </div>
+                    <div class="tower-option" data-tower="cannon">
+                        <div class="tower-icon cannon-tower"></div>
+                        <div class="tower-info">
+                            <div>炮塔</div>
+                            <div class="tower-cost">300金币</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="game-controls">
+                    <button id="startWave">开始下一波</button>
+                    <button id="pauseGame">暂停</button>
+                    <button id="restartGame">重新开始</button>
+                </div>
+                
+                <div class="game-status">
+                    <div id="gameMessage"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>
