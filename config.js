@@ -45,7 +45,7 @@ const GameConfig = {
         bomb:{
             name: '轰炸塔',
             cost: 250,
-            damage: 200,
+            damage: 125,
             range:200,
             fireRate:500,
             color:'black'
@@ -76,7 +76,7 @@ const GameConfig = {
 
     // 游戏路径点
     path: [
-        {x: 0, y: 300},
+        {x: 0, y:300},
         {x: 200, y: 300},
         {x: 200, y: 100},
         {x: 600, y: 100},
