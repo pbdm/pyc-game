@@ -111,29 +111,31 @@ body {
 .tower-icon {
     width: 40px;
     height: 40px;
-    border-radius: 50%;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
-    color: white;
-    font-size: 1.2em;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    border: 2px solid #2c3e50;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .basic-tower {
-    background: linear-gradient(135deg, #3498db, #2980b9);
+    background-image: url('images/basic-tower.svg');
 }
 
 .sniper-tower {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    background-image: url('images/sniper-tower.svg');
 }
 
 .cannon-tower {
-    background: linear-gradient(135deg, #f39c12, #e67e22);
+    background-image: url('images/cannon-tower.svg');
 }
 
 .laser-tower {
-    background: linear-gradient(135deg, #e91e63, #c2185b);
+    background-image: url('images/laser-tower.svg');
 }
 
 .tower-info {
