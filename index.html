@@ -13,19 +13,19 @@
             <div class="game-info">
                 <div class="info-item">
                     <span>生命值:</span>
-                    <span id="health">100</span>
+                    <span id="health"></span>
                 </div>
                 <div class="info-item">
                     <span>金币:</span>
-                    <span id="money">500</span>
+                    <span id="money"></span>
                 </div>
                 <div class="info-item">
                     <span>波数:</span>
-                    <span id="wave">1</span>
+                    <span id="wave"></span>
                 </div>
                 <div class="info-item">
                     <span>分数:</span>
-                    <span id="score">0</span>
+                    <span id="score"></span>
                 </div>
             </div>
         </div>
@@ -55,6 +55,16 @@
     </div>
     
     <script src="config.js"></script>
+    <script>
+        // 页面加载时从配置文件获取初始值
+        document.addEventListener('DOMContentLoaded', function() {
+            // 从 GameConfig.initial 获取初始值并设置到页面元素
+            document.getElementById('health').textContent = GameConfig.initial.health;
+            document.getElementById('money').textContent = GameConfig.initial.money;
+            document.getElementById('wave').textContent = GameConfig.initial.wave;
+            document.getElementById('score').textContent = GameConfig.initial.score;
+        });
+    </script>
     <script src="game.js"></script>
 </body>
 </html>

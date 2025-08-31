@@ -84,6 +84,11 @@ body {
     font-size: 1.2em;
 }
 
+#tower-options {
+    height: 269px;
+    overflow-y:scroll;
+}
+
 .tower-option {
     display: flex;
     align-items: center;
