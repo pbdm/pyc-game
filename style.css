@@ -132,6 +132,10 @@ body {
     background: linear-gradient(135deg, #f39c12, #e67e22);
 }
 
+.laser-tower {
+    background: linear-gradient(135deg, #e91e63, #c2185b);
+}
+
 .tower-info {
     flex: 1;
 }

@@ -33,6 +33,14 @@ const GameConfig = {
             range: 100,
             fireRate: 1500,
             color: '#f39c12'
+        },
+        laser: {
+            name: '激光塔',
+            cost: 200,
+            damage: 100,
+            range: 120,
+            fireRate: 800,
+            color: '#e91e63'
         }
     },
 
