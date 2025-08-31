@@ -41,6 +41,14 @@ const GameConfig = {
             range: 120,
             fireRate: 800,
             color: '#e91e63'
+        },
+        bomb:{
+            name: '轰炸塔',
+            cost: 250,
+            damage: 200,
+            range:200,
+            fireRate:500,
+            color:'black'
         }
     },
 

@@ -123,19 +123,22 @@ body {
 }
 
 .basic-tower {
-    background-image: url('images/basic-tower.svg');
+    background-image: url('images/basic.png');
 }
 
 .sniper-tower {
-    background-image: url('images/sniper-tower.svg');
+    background-image: url('images/sniper.png');
 }
 
 .cannon-tower {
-    background-image: url('images/cannon-tower.svg');
+    background-image: url('images/cannon.png');
 }
 
 .laser-tower {
-    background-image: url('images/laser-tower.svg');
+    background-image: url('images/laser.png');
+}
+.bomb-tower {
+    background-image: url('images/bomb.png');
 }
 
 .tower-info {
