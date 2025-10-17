@@ -1,62 +1,54 @@
-// 塔类
-class Tower {
-    constructor(x, y, type, config) {
-        this.x = x;
-        this.y = y;
-        this.type = type;
-        this.damage = config.damage;
-        this.range = config.range;
-        this.fireRate = config.fireRate;
-        this.color = config.color;
-        this.lastFired = 0;
+import { angleBetween, distance } from './Utils.js';
+import { Projectile } from './Projectile.js';
+
+export class Tower {
+  constructor({ x, y, spec }) {
+    this.x = x; this.y = y;
+    this.spec = spec; // from TOWERS
+    this.range = spec.range;
+    this.damage = spec.damage;
+    this.rpm = spec.rpm;
+    this.cooldown = 0; // seconds
+  }
+
+  findTarget(game) {
+    let best = null, bestD = Infinity;
+    for (const e of game.enemies) {
+      if (!e.isAlive()) continue;
+      const d = distance(this, e);
+      if (d <= this.range && d < bestD) { bestD = d; best = e; }
     }
-    
-    update(enemies) {
-        // 塔的逻辑更新
+    return best;
+  }
+
+  update(dt, game) {
+    this.cooldown -= dt;
+    if (this.cooldown < 0) this.cooldown = 0;
+    const target = this.findTarget(game);
+    if (!target) return;
+    if (this.cooldown === 0) {
+      // fire
+      const a = angleBetween(this, target);
+      const vx = Math.cos(a), vy = Math.sin(a);
+      game.projectiles.push(new Projectile({ x: this.x, y: this.y, vx, vy, damage: this.damage, target }));
+      const shotsPerSec = this.rpm / 60;
+      this.cooldown = 1 / shotsPerSec;
     }
-    
-    canFire() {
-        return Date.now() - this.lastFired >= this.fireRate;
-    }
-    
-    findTarget(enemies) {
-        for (const enemy of enemies) {
-            const distance = Math.sqrt((this.x - enemy.x) ** 2 + (this.y - enemy.y) ** 2);
-            if (distance <= this.range) {
-                return enemy;
-            }
-        }
-        return null;
-    }
-    
-    draw(ctx) {
-        // 绘制攻击范围
-        ctx.strokeStyle = this.color;
-        ctx.globalAlpha = 0.3;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.range, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-        
-        // 绘制防御塔图片
-        const img = this.getTowerImage();
-        if (img) {
-            const size = 40;
-            ctx.drawImage(img, this.x - size/2, this.y - size/2, size, size);
-        } else {
-            // 如果图片加载失败，使用备用颜色绘制
-            ctx.fillStyle = this.color;
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, 20, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-    
-    getTowerImage() {
-        if (!this._towerImage) {
-            this._towerImage = new Image();
-            this._towerImage.src = `images/${this.type}.png`;
-        }
-        return this._towerImage.complete ? this._towerImage : null;
-    }
+  }
+
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.fillStyle = '#94a3b8';
+    ctx.beginPath();
+    ctx.arc(0, 0, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(148,163,184,.2)';
+    ctx.beginPath();
+    ctx.arc(0, 0, this.range, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
+
+

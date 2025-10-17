@@ -1,76 +1,41 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>保护基地 - 塔防游戏</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>保护基地 - Base Defense</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="game-container">
-        <div class="game-header">
-            <h1>保护基地</h1>
-            <div class="game-info">
-                <div class="info-item">
-                    <span>生命值:</span>
-                    <span id="health"></span>
-                </div>
-                <div class="info-item">
-                    <span>金币:</span>
-                    <span id="money"></span>
-                </div>
-                <div class="info-item">
-                    <span>波数:</span>
-                    <span id="wave"></span>
-                </div>
-                <div class="info-item">
-                    <span>分数:</span>
-                    <span id="score"></span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="game-main">
-            <canvas id="gameCanvas" width="800" height="600"></canvas>
-            
-            <div class="game-sidebar">
-                <div class="tower-selection">
-                    <h3>选择防御塔</h3>
-                    <div id="tower-options">
-                        <!-- 防御塔选项将通过JavaScript动态生成 -->
-                    </div>
-                </div>
-                
-                <div class="game-controls">
-                    <button id="startWave">开始下一波</button>
-                    <button id="pauseGame">暂停</button>
-                    <button id="restartGame">重新开始</button>
-                </div>
-                
-                <div class="game-status">
-                    <div id="gameMessage"></div>
-                </div>
-            </div>
-        </div>
+  <div class="ui">
+    <div class="hud">
+      <div>金币：<span id="gold">0</span></div>
+      <div>基地生命：<span id="baseHp">0</span></div>
+      <div>波次：<span id="wave">0</span> / 21</div>
+      <button id="startWaveBtn">开始下一波</button>
+      <button id="restartBtn">重新开始</button>
     </div>
-    
-    <script src="config.js"></script>
-    <script>
-        // 页面加载时从配置文件获取初始值
-        document.addEventListener('DOMContentLoaded', function() {
-            // 从 GameConfig.initial 获取初始值并设置到页面元素
-            document.getElementById('health').textContent = GameConfig.initial.health;
-            document.getElementById('money').textContent = GameConfig.initial.money;
-            document.getElementById('wave').textContent = GameConfig.initial.wave;
-            document.getElementById('score').textContent = GameConfig.initial.score;
-        });
-    </script>
-    <!-- 加载各个类文件 -->
-    <script src="js/Tower.js"></script>
-    <script src="js/Enemy.js"></script>
-    <script src="js/Projectile.js"></script>
-    <script src="js/Particle.js"></script>
-    <script src="js/Game.js"></script>
-    <script src="js/main.js"></script>
+    <div class="toolbar">
+      <div class="group">
+        <div class="group-title">炮塔</div>
+        <div class="items" id="towerButtons"></div>
+      </div>
+      <div class="group">
+        <div class="group-title">陷阱</div>
+        <div class="items" id="trapButtons"></div>
+      </div>
+      <div class="group">
+        <div class="group-title">防守道具</div>
+        <div class="items" id="defenseButtons"></div>
+      </div>
+    </div>
+  </div>
+  <div class="stage-wrap">
+    <canvas id="game" width="960" height="600"></canvas>
+  </div>
+  <script type="module" src="js/main.js"></script>
+  
 </body>
 </html>
+
+

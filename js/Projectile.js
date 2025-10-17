@@ -1,40 +1,49 @@
-// 子弹类
-class Projectile {
-    constructor(x, y, target, damage) {
-        this.x = x;
-        this.y = y;
-        this.target = target;
-        this.damage = damage;
-        this.speed = GameConfig.projectile.speed;
+import { distance } from './Utils.js';
+
+export class Projectile {
+  constructor({ x, y, vx, vy, speed = 300, damage = 10, target = null }) {
+    this.x = x; this.y = y;
+    this.vx = vx; this.vy = vy;
+    this.speed = speed;
+    this.damage = damage;
+    this.radius = 3;
+    this.alive = true;
+    this.target = target;
+  }
+
+  update(dt, game) {
+    if (!this.alive) return;
+    if (this.target && this.target.isAlive()) {
+      const dx = this.target.x - this.x;
+      const dy = this.target.y - this.y;
+      const len = Math.hypot(dx, dy) || 1;
+      this.vx = dx / len;
+      this.vy = dy / len;
     }
-    
-    update() {
-        const dx = this.target.x - this.x;
-        const dy = this.target.y - this.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        if (distance < this.speed) {
-            this.x = this.target.x;
-            this.y = this.target.y;
-        } else {
-            this.x += (dx / distance) * this.speed;
-            this.y += (dy / distance) * this.speed;
-        }
+    this.x += this.vx * this.speed * dt;
+    this.y += this.vy * this.speed * dt;
+
+    // collision with enemies
+    for (const e of game.enemies) {
+      if (!e.isAlive()) continue;
+      const d = distance(this, e);
+      if (d <= (e.radius + this.radius)) {
+        e.takeDamage(this.damage);
+        this.alive = false;
+        break;
+      }
     }
-    
-    hitEnemy(enemy) {
-        const distance = Math.sqrt((this.x - enemy.x) ** 2 + (this.y - enemy.y) ** 2);
-        return distance < 20;
-    }
-    
-    isOutOfBounds(width, height) {
-        return this.x < 0 || this.x > width || this.y < 0 || this.y > height;
-    }
-    
-    draw(ctx) {
-        ctx.fillStyle = GameConfig.projectile.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, GameConfig.projectile.size, 0, Math.PI * 2);
-        ctx.fill();
-    }
+  }
+
+  draw(ctx) {
+    if (!this.alive) return;
+    ctx.save();
+    ctx.fillStyle = '#ffb703';
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 }
+
+
