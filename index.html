@@ -1,41 +1,22 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>保护基地 - Base Defense</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="utf-8">
+    <title>Base Defense</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
 </head>
 <body>
-  <div class="ui">
-    <div class="hud">
-      <div>金币：<span id="gold">0</span></div>
-      <div>基地生命：<span id="baseHp">0</span></div>
-      <div>波次：<span id="wave">0</span> / 21</div>
-      <button id="startWaveBtn">开始下一波</button>
-      <button id="restartBtn">重新开始</button>
-    </div>
-    <div class="toolbar">
-      <div class="group">
-        <div class="group-title">炮塔</div>
-        <div class="items" id="towerButtons"></div>
-      </div>
-      <div class="group">
-        <div class="group-title">陷阱</div>
-        <div class="items" id="trapButtons"></div>
-      </div>
-      <div class="group">
-        <div class="group-title">防守道具</div>
-        <div class="items" id="defenseButtons"></div>
-      </div>
-    </div>
-  </div>
-  <div class="stage-wrap">
-    <canvas id="game" width="960" height="600"></canvas>
-  </div>
-  <script type="module" src="js/main.js"></script>
-  
+    <script src="game.js"></script>
 </body>
 </html>
-
-

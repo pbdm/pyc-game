@@ -1,0 +1,6 @@
+I cannot start the game for you, but you can run it yourself with the following steps:
+1. Open a terminal or command prompt in the current directory (c:\Users\Administrator\c\pyc-game).
+2. Make sure you have Python installed. If not, you can download it from python.org.
+3. In the terminal, run the command: python -m http.server
+4. Open a web browser and go to the address: http://localhost:8000
+You should see the game running.
