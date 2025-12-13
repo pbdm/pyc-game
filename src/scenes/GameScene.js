@@ -1,0 +1,404 @@
+import Phaser from 'phaser';
+import { 
+  GRID_SIZE, GRID_COLS, GRID_ROWS, COLORS, SCREEN_HEIGHT, SCREEN_WIDTH, TOTAL_HEIGHT,
+  TURRET_STATS, TRAP_STATS, DEFENSE_ITEM_STATS, DEFENSE_TOOL_STATS,
+  INITIAL_GOLD, BASE_HP
+} from '../config/constants';
+import { WAVES } from '../config/waves';
+import { Turret } from '../entities/Turret';
+import { Zombie } from '../entities/Zombie';
+import { Projectile } from '../entities/Projectile';
+import { DefenseItem } from '../entities/DefenseItem';
+import { Trap } from '../entities/Trap';
+
+export class GameScene extends Phaser.Scene {
+  constructor() {
+    super('GameScene');
+    this.gold = INITIAL_GOLD;
+    this.baseHp = BASE_HP;
+    this.waveIndex = 0;
+    this.waveActive = false;
+    this.spawnTimer = 0;
+    this.enemiesRemainingToSpawn = [];
+    
+    this.selectedItem = null; // { type: 'turret', key: 'basic' }
+    this.shopCategory = 'turret'; // 'turret', 'trap', 'defense', 'tool'
+  }
+
+  create() {
+    this.createGrid();
+    this.createBase();
+    this.createGroups();
+    this.createUI();
+    
+    // Inputs
+    this.input.on('pointerdown', this.onMapClick, this);
+    
+    // Collisions
+    this.physics.add.overlap(this.projectiles, this.enemies, this.onProjectileHit, null, this);
+    this.physics.add.collider(this.enemies, this.defenseItems, this.onZombieHitWall, null, this);
+    this.physics.add.collider(this.enemies, this.turrets, this.onZombieHitWall, null, this);
+    this.physics.add.collider(this.enemies, this.base, this.onZombieHitWall, null, this);
+    this.physics.add.overlap(this.enemies, this.traps, this.onZombieHitTrap, null, this);
+    
+    // Effects
+    this.createEffects();
+
+    // Events
+    this.events.on('zombieKilled', (reward) => {
+        this.gold += reward;
+        this.updateStats();
+    });
+  }
+
+  createEffects() {
+      // Particle Manager
+      this.particles = this.add.particles(0, 0, 'particle', {
+          speed: 100,
+          scale: { start: 1, end: 0 },
+          blendMode: 'ADD',
+          lifespan: 300,
+          emitting: false
+      });
+  }
+
+  createExplosion(x, y, color = 0xffffff, count = 10) {
+      this.particles.emitParticleAt(x, y, count);
+      // We can't easily change tint per emission in a single shared emitter without complex config,
+      // but we can set tint for the whole manager or use multiple emitters.
+      // For simplicity, let's just emit white or use a dedicated emitter if needed.
+      // Actually, Phaser 3.60+ allows emitting with config overrides.
+      // But let's keep it simple: White explosions for now, or use setTint if single emitter isn't running overlapping colors.
+      // Better: Create a temporary emitter or just accept white.
+  }
+  
+  showFloatingText(x, y, message, color = '#ffffff') {
+      const text = this.add.text(x, y, message, {
+          fontSize: '24px',
+          fill: color,
+          stroke: '#000',
+          strokeThickness: 2,
+          fontStyle: 'bold'
+      }).setOrigin(0.5);
+
+      this.tweens.add({
+          targets: text,
+          y: y - 50,
+          alpha: 0,
+          duration: 800,
+          ease: 'Power2',
+          onComplete: () => text.destroy()
+      });
+  }
+
+  createGrid() {
+    for (let y = 0; y < GRID_ROWS; y++) {
+      for (let x = 0; x < GRID_COLS; x++) {
+        const texture = (x + y) % 2 === 0 ? 'grid_light' : 'grid_dark';
+        this.add.image(x * GRID_SIZE + GRID_SIZE/2, y * GRID_SIZE + GRID_SIZE/2, texture);
+      }
+    }
+  }
+
+  createBase() {
+    this.base = this.physics.add.staticSprite(
+      (GRID_COLS - 1) * GRID_SIZE + GRID_SIZE/2,
+      (GRID_ROWS / 2) * GRID_SIZE,
+      'base'
+    );
+    this.base.setScale(1, GRID_ROWS); 
+    this.base.refreshBody();
+    this.base.takeDamage = (amount) => this.damageBase(amount);
+  }
+
+  createGroups() {
+    this.turrets = this.add.group({ classType: Turret, runChildUpdate: true });
+    this.enemies = this.physics.add.group({ classType: Zombie, runChildUpdate: true });
+    this.projectiles = this.physics.add.group({ classType: Projectile, runChildUpdate: true });
+    this.defenseItems = this.physics.add.group({ classType: DefenseItem, runChildUpdate: false }); 
+    this.traps = this.physics.add.group({ classType: Trap, runChildUpdate: true }); 
+  }
+
+  createUI() {
+    this.add.rectangle(SCREEN_WIDTH/2, SCREEN_HEIGHT + 75, SCREEN_WIDTH, 150, COLORS.UI_BACKGROUND);
+    
+    this.goldText = this.add.text(10, SCREEN_HEIGHT + 10, `Gold: ${this.gold}`, { fontSize: '20px', fill: '#fff' });
+    this.hpText = this.add.text(150, SCREEN_HEIGHT + 10, `HP: ${this.baseHp}`, { fontSize: '20px', fill: '#fff' });
+    this.waveText = this.add.text(300, SCREEN_HEIGHT + 10, `Wave: ${this.waveIndex + 1}`, { fontSize: '20px', fill: '#fff' });
+    
+    const nextWaveBtn = this.add.text(SCREEN_WIDTH - 120, SCREEN_HEIGHT + 10, 'Start Wave', { 
+        fontSize: '20px', fill: '#0f0', backgroundColor: '#000', padding: { x: 10, y: 5 } 
+    })
+    .setInteractive()
+    .on('pointerdown', () => this.startWave());
+    
+    const categories = ['turret', 'trap', 'defense', 'tool'];
+    let catX = 10;
+    categories.forEach(cat => {
+        this.add.text(catX, SCREEN_HEIGHT + 40, cat.toUpperCase(), { fontSize: '16px', fill: '#aaa' })
+            .setInteractive()
+            .on('pointerdown', () => this.selectCategory(cat));
+        catX += 100;
+    });
+    
+    this.shopContainer = this.add.container(10, SCREEN_HEIGHT + 70);
+    this.updateShopUI();
+  }
+
+  selectCategory(cat) {
+    this.shopCategory = cat;
+    this.updateShopUI();
+  }
+
+  updateShopUI() {
+    this.shopContainer.removeAll(true);
+    let items = {};
+    if (this.shopCategory === 'turret') items = TURRET_STATS;
+    else if (this.shopCategory === 'trap') items = TRAP_STATS;
+    else if (this.shopCategory === 'defense') items = DEFENSE_ITEM_STATS;
+    else items = DEFENSE_TOOL_STATS;
+    
+    let x = 0;
+    for (const [key, stat] of Object.entries(items)) {
+        const btn = this.add.text(x, 0, `${stat.name}\n$${stat.cost}`, { 
+            fontSize: '12px', fill: '#fff', backgroundColor: '#444', padding: { x: 5, y: 5 }, align: 'center'
+        })
+        .setInteractive()
+        .on('pointerdown', () => {
+            this.selectedItem = { type: this.shopCategory, key, stat };
+        });
+        this.shopContainer.add(btn);
+        x += 80;
+    }
+  }
+
+  onMapClick(pointer) {
+    if (pointer.y > SCREEN_HEIGHT) return;
+    if (!this.selectedItem) return;
+    
+    const gridX = Math.floor(pointer.x / GRID_SIZE);
+    const gridY = Math.floor(pointer.y / GRID_SIZE);
+    
+    const x = gridX * GRID_SIZE + GRID_SIZE/2;
+    const y = gridY * GRID_SIZE + GRID_SIZE/2;
+    
+    if (this.gold < this.selectedItem.stat.cost) {
+        console.log("Not enough gold");
+        return;
+    }
+    
+    // Check occupancy
+    // In a real game, checking overlap with existing entities is needed.
+    // For now, assume player places correctly.
+    
+    this.gold -= this.selectedItem.stat.cost;
+    this.updateStats();
+    
+    if (this.selectedItem.type === 'turret') {
+        this.turrets.add(new Turret(this, x, y, this.selectedItem.key));
+    } else if (this.selectedItem.type === 'defense' || this.selectedItem.type === 'tool') {
+        this.defenseItems.add(new DefenseItem(this, x, y, this.selectedItem.key));
+    } else if (this.selectedItem.type === 'trap') {
+        this.traps.add(new Trap(this, x, y, this.selectedItem.key));
+    }
+  }
+
+  startWave() {
+    if (this.waveActive || this.waveIndex >= WAVES.length) return;
+    
+    const waveData = WAVES[this.waveIndex];
+    this.generateWaveEnemies(waveData);
+    this.waveActive = true;
+    
+    console.log(`Starting Wave ${waveData.level}`);
+  }
+
+  generateWaveEnemies(waveData) {
+    this.enemiesRemainingToSpawn = [];
+    const types = ['normal', 'small', 'ram', 'giant', 'boss'];
+    
+    types.forEach(type => {
+        const count = waveData[type] || 0;
+        for(let i=0; i<count; i++) {
+            this.enemiesRemainingToSpawn.push(type);
+        }
+    });
+    Phaser.Utils.Array.Shuffle(this.enemiesRemainingToSpawn);
+  }
+
+  update(time, delta) {
+    if (this.waveActive) {
+        if (this.enemiesRemainingToSpawn.length > 0) {
+            if (time > this.spawnTimer + 1000) {
+                const type = this.enemiesRemainingToSpawn.shift();
+                this.spawnEnemy(type);
+                this.spawnTimer = time;
+            }
+        } else if (this.enemies.getLength() === 0) {
+            this.endWave();
+        }
+    }
+  }
+
+  spawnEnemy(type) {
+    console.log(`Spawning enemy: ${type}`);
+    const row = Phaser.Math.Between(0, GRID_ROWS - 1);
+    const y = row * GRID_SIZE + GRID_SIZE/2;
+    const x = 0; // Spawn at 0 to be visible immediately
+    this.enemies.add(new Zombie(this, x, y, type));
+  }
+
+  damageBase(amount) {
+      if (this.baseHp <= 0) return; // Already dead
+
+      this.baseHp -= amount;
+      this.updateStats();
+      
+      // Visual feedback
+      this.cameras.main.shake(100, 0.005); // Shake screen slightly
+      this.base.setTint(0xff0000);
+      this.time.delayedCall(100, () => this.base.clearTint());
+
+      if (this.baseHp <= 0) {
+          this.baseHp = 0;
+          this.showGameOver();
+      }
+  }
+
+  showGameOver() {
+      this.physics.pause();
+      this.waveActive = false;
+
+      // Create a dark overlay
+      const overlay = this.add.rectangle(SCREEN_WIDTH/2, TOTAL_HEIGHT/2, SCREEN_WIDTH, TOTAL_HEIGHT, 0x000000, 0.7);
+      
+      const container = this.add.container(SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
+      
+      const bg = this.add.rectangle(0, 0, 400, 300, 0x444444);
+      bg.setStrokeStyle(2, 0xffffff);
+      
+      const title = this.add.text(0, -50, '游戏结束', { fontSize: '40px', fill: '#ff0000' }).setOrigin(0.5);
+      
+      const retryBtn = this.add.text(0, 50, '是否重试', { 
+          fontSize: '30px', fill: '#00ff00', backgroundColor: '#000', padding: { x: 20, y: 10 } 
+      })
+      .setOrigin(0.5)
+      .setInteractive()
+      .on('pointerdown', () => {
+          this.scene.restart();
+      });
+      
+      container.add([bg, title, retryBtn]);
+      
+      // Ensure UI is on top
+      container.setDepth(100);
+      overlay.setDepth(99);
+  }
+
+  healBase(amount) {
+      this.baseHp = Math.min(BASE_HP, this.baseHp + amount);
+      this.updateStats();
+  }
+
+  endWave() {
+      this.waveActive = false;
+      this.waveIndex++;
+      this.updateStats();
+
+      if (this.waveIndex < WAVES.length) {
+          this.showWaveCompletePopup();
+      } else {
+          this.showVictoryPopup();
+      }
+  }
+
+  showWaveCompletePopup() {
+      // Create overlay
+      const overlay = this.add.rectangle(SCREEN_WIDTH/2, TOTAL_HEIGHT/2, SCREEN_WIDTH, TOTAL_HEIGHT, 0x000000, 0.7);
+      const container = this.add.container(SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
+      
+      const bg = this.add.rectangle(0, 0, 400, 200, 0x444444);
+      bg.setStrokeStyle(2, 0x00ff00);
+      
+      const title = this.add.text(0, -40, `第 ${this.waveIndex} 关完成!`, { fontSize: '30px', fill: '#00ff00' }).setOrigin(0.5);
+      
+      const nextBtn = this.add.text(0, 40, '开启下一关', { 
+          fontSize: '24px', fill: '#ffffff', backgroundColor: '#000', padding: { x: 20, y: 10 } 
+      })
+      .setOrigin(0.5)
+      .setInteractive()
+      .on('pointerdown', () => {
+          overlay.destroy();
+          container.destroy();
+          this.startWave();
+      });
+      
+      container.add([bg, title, nextBtn]);
+      container.setDepth(100);
+      overlay.setDepth(99);
+  }
+
+  showVictoryPopup() {
+      const overlay = this.add.rectangle(SCREEN_WIDTH/2, TOTAL_HEIGHT/2, SCREEN_WIDTH, TOTAL_HEIGHT, 0x000000, 0.8);
+      this.add.text(SCREEN_WIDTH/2, SCREEN_HEIGHT/2, 'VICTORY!', { fontSize: '60px', fill: '#ffff00' }).setOrigin(0.5).setDepth(100);
+  }
+  
+  updateStats() {
+      this.goldText.setText(`Gold: ${this.gold}`);
+      this.hpText.setText(`HP: ${this.baseHp}`);
+      this.waveText.setText(`Wave: ${this.waveIndex + 1}`);
+  }
+
+  onProjectileHit(projectile, enemy) {
+      projectile.hitTarget();
+  }
+
+  onZombieHitWall(enemy, wall) {
+      if (enemy.active && wall.active) {
+          if (typeof enemy.tryAttack === 'function') {
+              enemy.tryAttack(wall, this.time.now);
+          } else if (typeof wall.tryAttack === 'function') {
+               // In case arguments are swapped
+               wall.tryAttack(enemy, this.time.now);
+          } else {
+              console.error('onZombieHitWall: neither object has tryAttack');
+              console.log('Enemy:', enemy);
+              console.log('Wall:', wall);
+              console.log('Enemy Type:', enemy.constructor.name);
+          }
+      }
+  }
+  
+  onZombieHitTrap(enemy, trap) {
+      if (!enemy.active || !trap.active) return;
+
+      if (typeof trap.trigger === 'function') {
+          trap.trigger(enemy, this.time.now);
+      } else if (typeof enemy.trigger === 'function') {
+          // Arguments swapped
+          enemy.trigger(trap, this.time.now);
+      } else {
+          console.log('Trap hit but no trigger function found');
+      }
+  }
+  
+  createProjectile(x, y, target, damage) {
+      this.projectiles.add(new Projectile(this, x, y, target, damage));
+  }
+  
+  getClosestEnemy(x, y, range) {
+      const enemies = this.enemies.getChildren();
+      let closest = null;
+      let closestDist = range;
+      
+      enemies.forEach(enemy => {
+          if (!enemy.active) return;
+          const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
+          if (dist < closestDist) {
+              closestDist = dist;
+              closest = enemy;
+          }
+      });
+      return closest;
+  }
+}

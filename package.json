@@ -1,0 +1,27 @@
+{
+  "name": "pyc-game",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pbdm/pyc-game.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pbdm/pyc-game/issues"
+  },
+  "homepage": "https://github.com/pbdm/pyc-game#readme",
+  "dependencies": {
+    "phaser": "^3.90.0",
+    "vite": "^7.2.7"
+  }
+}
