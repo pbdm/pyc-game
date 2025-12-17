@@ -10,6 +10,7 @@ import { Zombie } from '../entities/Zombie';
 import { Projectile } from '../entities/Projectile';
 import { DefenseItem } from '../entities/DefenseItem';
 import { Trap } from '../entities/Trap';
+import { SoundManager } from '../managers/SoundManager';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -23,9 +24,12 @@ export class GameScene extends Phaser.Scene {
     
     this.selectedItem = null; // { type: 'turret', key: 'basic' }
     this.shopCategory = 'turret'; // 'turret', 'trap', 'defense', 'tool'
+    this.isPopupOpen = false;
   }
 
   create() {
+    this.soundManager = new SoundManager(this);
+    
     this.createGrid();
     this.createBase();
     this.createGroups();
@@ -36,7 +40,10 @@ export class GameScene extends Phaser.Scene {
     
     // Collisions
     this.physics.add.overlap(this.projectiles, this.enemies, this.onProjectileHit, null, this);
-    this.physics.add.collider(this.enemies, this.defenseItems, this.onZombieHitWall, null, this);
+    
+    // Use processCallback for selective collision (e.g., Pits only stop specific zombies)
+    this.physics.add.collider(this.enemies, this.defenseItems, this.onZombieHitWall, this.checkWallCollision, this);
+    
     this.physics.add.collider(this.enemies, this.turrets, this.onZombieHitWall, null, this);
     this.physics.add.collider(this.enemies, this.base, this.onZombieHitWall, null, this);
     this.physics.add.overlap(this.enemies, this.traps, this.onZombieHitTrap, null, this);
@@ -122,22 +129,28 @@ export class GameScene extends Phaser.Scene {
   createUI() {
     this.add.rectangle(SCREEN_WIDTH/2, SCREEN_HEIGHT + 75, SCREEN_WIDTH, 150, COLORS.UI_BACKGROUND);
     
-    this.goldText = this.add.text(10, SCREEN_HEIGHT + 10, `Gold: ${this.gold}`, { fontSize: '20px', fill: '#fff' });
-    this.hpText = this.add.text(150, SCREEN_HEIGHT + 10, `HP: ${this.baseHp}`, { fontSize: '20px', fill: '#fff' });
-    this.waveText = this.add.text(300, SCREEN_HEIGHT + 10, `Wave: ${this.waveIndex + 1}`, { fontSize: '20px', fill: '#fff' });
+    this.goldText = this.add.text(10, SCREEN_HEIGHT + 10, `金币: ${this.gold}`, { fontSize: '20px', fill: '#fff' });
+    this.hpText = this.add.text(150, SCREEN_HEIGHT + 10, `生命: ${this.baseHp}`, { fontSize: '20px', fill: '#fff' });
+    this.waveText = this.add.text(300, SCREEN_HEIGHT + 10, `波数: ${this.waveIndex + 1}`, { fontSize: '20px', fill: '#fff' });
+    this.enemiesText = this.add.text(450, SCREEN_HEIGHT + 10, `剩余: 0`, { fontSize: '20px', fill: '#ffaaaa' });
     
-    const nextWaveBtn = this.add.text(SCREEN_WIDTH - 120, SCREEN_HEIGHT + 10, 'Start Wave', { 
+    const nextWaveBtn = this.add.text(SCREEN_WIDTH - 120, SCREEN_HEIGHT + 10, '开始波数', { 
         fontSize: '20px', fill: '#0f0', backgroundColor: '#000', padding: { x: 10, y: 5 } 
     })
     .setInteractive()
     .on('pointerdown', () => this.startWave());
     
-    const categories = ['turret', 'trap', 'defense', 'tool'];
+    const categories = [
+        { key: 'turret', label: '炮塔' }, 
+        { key: 'trap', label: '陷阱' }, 
+        { key: 'defense', label: '防御' }, 
+        { key: 'tool', label: '工具' }
+    ];
     let catX = 10;
     categories.forEach(cat => {
-        this.add.text(catX, SCREEN_HEIGHT + 40, cat.toUpperCase(), { fontSize: '16px', fill: '#aaa' })
+        this.add.text(catX, SCREEN_HEIGHT + 40, cat.label, { fontSize: '16px', fill: '#aaa' })
             .setInteractive()
-            .on('pointerdown', () => this.selectCategory(cat));
+            .on('pointerdown', () => this.selectCategory(cat.key));
         catX += 100;
     });
     
@@ -173,6 +186,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   onMapClick(pointer) {
+    if (this.isPopupOpen) return;
     if (pointer.y > SCREEN_HEIGHT) return;
     if (!this.selectedItem) return;
     
@@ -195,11 +209,24 @@ export class GameScene extends Phaser.Scene {
     this.updateStats();
     
     if (this.selectedItem.type === 'turret') {
-        this.turrets.add(new Turret(this, x, y, this.selectedItem.key));
+        const turret = new Turret(this, x, y, this.selectedItem.key);
+        this.turrets.add(turret);
+        // Turret handles its own body in constructor? 
+        // Let's check Turret.js. It calls this.scene.physics.add.existing(this, true).
+        // Since this.turrets is NOT a physics group (just add.group), this is fine.
     } else if (this.selectedItem.type === 'defense' || this.selectedItem.type === 'tool') {
-        this.defenseItems.add(new DefenseItem(this, x, y, this.selectedItem.key));
+        const item = new DefenseItem(this, x, y, this.selectedItem.key);
+        this.defenseItems.add(item);
+        // defenseItems IS a physics group. It adds a dynamic body.
+        // We need to make it static (immovable).
+        item.body.setImmovable(true);
+        item.body.moves = false; 
     } else if (this.selectedItem.type === 'trap') {
-        this.traps.add(new Trap(this, x, y, this.selectedItem.key));
+        const trap = new Trap(this, x, y, this.selectedItem.key);
+        this.traps.add(trap);
+        // traps IS a physics group.
+        trap.body.setImmovable(true);
+        trap.body.moves = false;
     }
   }
 
@@ -211,6 +238,7 @@ export class GameScene extends Phaser.Scene {
     this.waveActive = true;
     
     console.log(`Starting Wave ${waveData.level}`);
+    this.updateStats();
   }
 
   generateWaveEnemies(waveData) {
@@ -258,6 +286,9 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.shake(100, 0.005); // Shake screen slightly
       this.base.setTint(0xff0000);
       this.time.delayedCall(100, () => this.base.clearTint());
+      
+      // Audio feedback (Intense)
+      this.soundManager.playBaseDamage();
 
       if (this.baseHp <= 0) {
           this.baseHp = 0;
@@ -268,6 +299,7 @@ export class GameScene extends Phaser.Scene {
   showGameOver() {
       this.physics.pause();
       this.waveActive = false;
+      this.isPopupOpen = true;
 
       // Create a dark overlay
       const overlay = this.add.rectangle(SCREEN_WIDTH/2, TOTAL_HEIGHT/2, SCREEN_WIDTH, TOTAL_HEIGHT, 0x000000, 0.7);
@@ -313,6 +345,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   showWaveCompletePopup() {
+      this.isPopupOpen = true;
       // Create overlay
       const overlay = this.add.rectangle(SCREEN_WIDTH/2, TOTAL_HEIGHT/2, SCREEN_WIDTH, TOTAL_HEIGHT, 0x000000, 0.7);
       const container = this.add.container(SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
@@ -328,6 +361,7 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive()
       .on('pointerdown', () => {
+          this.isPopupOpen = false;
           overlay.destroy();
           container.destroy();
           this.startWave();
@@ -339,18 +373,67 @@ export class GameScene extends Phaser.Scene {
   }
 
   showVictoryPopup() {
+      this.isPopupOpen = true;
       const overlay = this.add.rectangle(SCREEN_WIDTH/2, TOTAL_HEIGHT/2, SCREEN_WIDTH, TOTAL_HEIGHT, 0x000000, 0.8);
-      this.add.text(SCREEN_WIDTH/2, SCREEN_HEIGHT/2, 'VICTORY!', { fontSize: '60px', fill: '#ffff00' }).setOrigin(0.5).setDepth(100);
+      this.add.text(SCREEN_WIDTH/2, SCREEN_HEIGHT/2, '胜利!', { fontSize: '60px', fill: '#ffff00' }).setOrigin(0.5).setDepth(100);
   }
   
   updateStats() {
-      this.goldText.setText(`Gold: ${this.gold}`);
-      this.hpText.setText(`HP: ${this.baseHp}`);
-      this.waveText.setText(`Wave: ${this.waveIndex + 1}`);
+      this.goldText.setText(`金币: ${this.gold}`);
+      this.hpText.setText(`生命: ${this.baseHp}`);
+      this.waveText.setText(`波数: ${this.waveIndex + 1}`);
+      
+      const counts = {};
+      
+      // Count pending
+      this.enemiesRemainingToSpawn.forEach(type => {
+          counts[type] = (counts[type] || 0) + 1;
+      });
+      
+      // Count active
+      this.enemies.getChildren().forEach(zombie => {
+          if (zombie.active) {
+              const type = zombie.zombieType;
+              counts[type] = (counts[type] || 0) + 1;
+          }
+      });
+      
+      const parts = [];
+      const typeMap = { 'normal': '普通', 'small': '小型', 'ram': '冲撞', 'giant': '巨型', 'boss': 'BOSS' };
+      
+      for (const [type, count] of Object.entries(counts)) {
+          if (count > 0) {
+              const label = typeMap[type] || type;
+              parts.push(`${label}:${count}`);
+          }
+      }
+      
+      if (parts.length === 0) {
+          this.enemiesText.setText('剩余: 0');
+      } else {
+          this.enemiesText.setText(`剩余: ${parts.join(' ')}`);
+      }
   }
 
   onProjectileHit(projectile, enemy) {
       projectile.hitTarget();
+  }
+
+  checkWallCollision(enemy, wall) {
+      if (!wall.stats) return true; // Default collide
+      
+      // If the item has specific targets (like a Pit), check if enemy is in targets
+      if (wall.stats.targets) {
+          // If targets array exists, ONLY collide if enemy type is in it
+          if (wall.stats.targets.includes(enemy.zombieType)) {
+              return true;
+          } else {
+              // Ignore collision (zombie walks over)
+              return false;
+          }
+      }
+      
+      return true;
   }
 
   onZombieHitWall(enemy, wall) {

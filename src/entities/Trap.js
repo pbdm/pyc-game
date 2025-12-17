@@ -9,8 +9,6 @@ export class Trap extends Entity {
     this.setTint(this.stats.color);
     this.uses = this.stats.uses;
     this.lastTriggered = 0;
-    
-    this.scene.physics.add.existing(this, true);
   }
 
   update(time, delta) {

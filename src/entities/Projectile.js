@@ -29,6 +29,7 @@ export class Projectile extends Phaser.GameObjects.Sprite {
 
   hitTarget() {
     this.scene.createExplosion(this.x, this.y, 0xffff00, 5);
+    this.scene.soundManager.playHit();
     if (this.target && this.target.active) {
       this.target.takeDamage(this.damage);
     }

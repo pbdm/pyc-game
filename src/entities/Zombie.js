@@ -35,7 +35,7 @@ export class Zombie extends Phaser.GameObjects.Sprite {
   
   tryAttack(target, time) {
       if (time > this.lastAttackTime + this.attackRate) {
-          target.takeDamage(this.stats.damage);
+          target.takeDamage(this.stats.damage, this); // Pass self as attacker
           this.lastAttackTime = time;
           this.playAttackAnimation(target);
       }
@@ -98,6 +98,7 @@ export class Zombie extends Phaser.GameObjects.Sprite {
 
   die() {
     this.scene.createExplosion(this.x, this.y, this.stats.color, 20);
+    this.scene.soundManager.playExplosion();
     this.scene.events.emit('zombieKilled', this.stats.reward);
     this.hpBar.destroy();
     this.destroy();

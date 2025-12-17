@@ -40,6 +40,7 @@ export class Turret extends Entity {
     console.log(`Turret firing at ${target.x.toFixed(0)}, ${target.y.toFixed(0)}`);
     // Create projectile
     this.scene.createProjectile(this.x, this.y, target, this.stats.damage);
+    this.scene.soundManager.playShoot();
     
     // Rotate turret to face target
     const angle = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);

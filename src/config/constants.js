@@ -55,26 +55,11 @@ export const DEFENSE_TOOL_STATS = {
 };
 
 export const ZOMBIE_STATS = {
-  'normal': { name: '普通僵尸', damage: 10, speed: 10, hp: 100, resist: 0, reward: 50, color: 0x00aa00 }, // speed cm/s? Map is 30cm wide = 1200px.
-  // if 30cm = 1200px, then 1cm = 40px.
-  // speed 10cm/s = 400px/s. That's VERY fast for a tower defense.
-  // Maybe the map size 30cm is just flavor text and I should balance speed differently.
-  // Let's assume 1 grid = 1cm for simplicity in calculation first, so 1 grid = 40px.
-  // Then 10cm/s = 10 grids/s = 400px/s. This allows crossing the map in 3 seconds.
-  // This seems too fast.
-  // Let's scale speed down by a factor, e.g., 0.1 or 0.2, or interpret speed differently.
-  // Wait, if map is 30cm long, and speed is 10cm/s, it takes 3 seconds to cross.
-  // That is indeed very fast.
-  // Maybe "cm" corresponds to a smaller pixel amount?
-  // Let's stick to relative speeds. Normal=10, Small=15, Ram=40, Giant=5, Boss=2.5.
-  // Let's define a BASE_SPEED_MULTIPLIER = 5 (pixels per tick? or per second?)
-  // If we want the normal zombie (speed 10) to cross in say 30 seconds.
-  // Map width 1200px. 1200 / 30 = 40 px/s.
-  // So Speed 10 -> 40 px/s. Multiplier = 4.
-  'small': { name: '小型僵尸', damage: 5, speed: 15, hp: 50, resist: 0, reward: 25, color: 0x55aa55 },
-  'ram': { name: '冲撞僵尸', damage: 20, speed: 40, hp: 200, resist: 10, reward: 100, color: 0x995500 },
-  'giant': { name: '巨型僵尸', damage: 100, speed: 5, hp: 1000, resist: 64, reward: 500, color: 0x444444 },
-  'boss': { name: 'BOSS僵尸', damage: 200, speed: 2.5, hp: 10000, resist: 128, reward: 1000, color: 0x000000 },
+  'normal': { name: '普通僵尸', damage: 50, speed: 10, hp: 500, resist: 0, reward: 50, color: 0x00aa00 }, 
+  'small': { name: '小型僵尸', damage: 25, speed: 15, hp: 250, resist: 0, reward: 25, color: 0x55aa55 },
+  'ram': { name: '冲撞僵尸', damage: 100, speed: 40, hp: 1000, resist: 10, reward: 100, color: 0x995500 },
+  'giant': { name: '巨型僵尸', damage: 500, speed: 5, hp: 5000, resist: 64, reward: 500, color: 0x444444 },
+  'boss': { name: 'BOSS僵尸', damage: 1000, speed: 2.5, hp: 50000, resist: 128, reward: 1000, color: 0x000000 },
 };
 
 export const SPEED_MULTIPLIER = 10; // Speed 10 * 10 = 100px/s.
