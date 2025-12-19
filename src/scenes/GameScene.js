@@ -280,6 +280,9 @@ export class GameScene extends Phaser.Scene {
             if (child.anims) child.anims.pause();
         });
         this.enemies.getChildren().forEach(e => e.anims && e.anims.pause());
+        
+        this.createPauseMenu();
+
     } else {
         this.physics.resume();
         this.soundManager.resume();
@@ -289,6 +292,156 @@ export class GameScene extends Phaser.Scene {
             if (child.anims) child.anims.resume();
         });
         this.enemies.getChildren().forEach(e => e.anims && e.anims.resume());
+        
+        if (this.pauseMenuContainer) {
+            this.pauseMenuContainer.destroy();
+            this.pauseMenuContainer = null;
+        }
+    }
+  }
+
+  createPauseMenu() {
+    this.pauseMenuContainer = this.add.container(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+    
+    // Background
+    const bg = this.add.rectangle(0, 0, 300, 240, 0x000000, 0.9);
+    bg.setStrokeStyle(2, 0xffff00);
+    
+    const title = this.add.text(0, -90, '游戏暂停', { fontSize: '30px', fill: '#ffff00', fontStyle: 'bold' }).setOrigin(0.5);
+
+    // Save Button
+    const saveBtn = this.add.text(0, -20, '保存游戏', { 
+        fontSize: '24px', fill: '#fff', backgroundColor: '#333', padding: { x: 20, y: 10 } 
+    })
+    .setOrigin(0.5)
+    .setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => this.saveGame())
+    .on('pointerover', () => saveBtn.setStyle({ fill: '#0f0' }))
+    .on('pointerout', () => saveBtn.setStyle({ fill: '#fff' }));
+        
+    // Load Button
+    const loadBtn = this.add.text(0, 60, '读取存档', { 
+        fontSize: '24px', fill: '#fff', backgroundColor: '#333', padding: { x: 20, y: 10 } 
+    })
+    .setOrigin(0.5)
+    .setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => this.loadGame())
+    .on('pointerover', () => loadBtn.setStyle({ fill: '#0f0' }))
+    .on('pointerout', () => loadBtn.setStyle({ fill: '#fff' }));
+
+    this.pauseMenuContainer.add([bg, title, saveBtn, loadBtn]);
+    this.pauseMenuContainer.setDepth(200);
+  }
+
+  saveGame() {
+    try {
+        const gameState = {
+            gold: this.gold,
+            baseHp: this.baseHp,
+            waveIndex: this.waveIndex,
+            waveActive: this.waveActive,
+            enemiesRemainingToSpawn: this.enemiesRemainingToSpawn,
+            spawnTimer: this.spawnTimer, // Approximation
+            turrets: this.turrets.getChildren().map(t => ({
+                x: t.x, y: t.y, type: t.turretType, level: t.level || 1
+            })),
+            defenseItems: this.defenseItems.getChildren().map(d => ({
+                x: d.x, y: d.y, type: d.itemType, hp: d.hp
+            })),
+            traps: this.traps.getChildren().map(t => ({
+                x: t.x, y: t.y, type: t.trapType
+            })),
+            enemies: this.enemies.getChildren().map(e => ({
+                x: e.x, y: e.y, type: e.zombieType, hp: e.hp
+            }))
+        };
+        
+        localStorage.setItem('pyc_tower_defense_save', JSON.stringify(gameState));
+        this.showFloatingText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 100, '游戏已保存!', '#00ff00');
+    } catch (e) {
+        console.error("Save failed:", e);
+        this.showFloatingText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 100, '保存失败!', '#ff0000');
+    }
+  }
+
+  loadGame() {
+    try {
+        const saveString = localStorage.getItem('pyc_tower_defense_save');
+        if (!saveString) {
+            this.showFloatingText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 100, '没有找到存档!', '#ff0000');
+            return;
+        }
+        
+        const data = JSON.parse(saveString);
+        
+        // Restore Globals
+        this.gold = data.gold;
+        this.baseHp = data.baseHp;
+        this.waveIndex = data.waveIndex;
+        this.waveActive = data.waveActive;
+        this.enemiesRemainingToSpawn = data.enemiesRemainingToSpawn || [];
+        // Reset spawn timer so it doesn't immediately spawn everything if time jumped? 
+        // Actually, just keep active.
+        this.spawnTimer = this.time.now; 
+        
+        // Clear existing groups
+        this.turrets.clear(true, true);
+        this.enemies.clear(true, true);
+        this.projectiles.clear(true, true);
+        this.defenseItems.clear(true, true);
+        this.traps.clear(true, true);
+        this.particles.emitters.list.forEach(e => e.stop()); // Stop particles
+        
+        // Restore Entities
+        if (data.turrets) {
+            data.turrets.forEach(t => {
+                const turret = new Turret(this, t.x, t.y, t.type);
+                if (t.level) turret.level = t.level;
+                this.turrets.add(turret);
+            });
+        }
+        
+        if (data.defenseItems) {
+            data.defenseItems.forEach(d => {
+                const item = new DefenseItem(this, d.x, d.y, d.type);
+                if (d.hp !== undefined) item.hp = d.hp;
+                this.defenseItems.add(item);
+                item.body.setImmovable(true);
+                item.body.moves = false;
+            });
+        }
+        
+        if (data.traps) {
+            data.traps.forEach(t => {
+                const trap = new Trap(this, t.x, t.y, t.type);
+                this.traps.add(trap);
+                trap.body.setImmovable(true);
+                trap.body.moves = false;
+            });
+        }
+        
+        if (data.enemies) {
+            data.enemies.forEach(e => {
+                const zombie = new Zombie(this, e.x, e.y, e.type);
+                if (e.hp !== undefined) zombie.hp = e.hp;
+                this.enemies.add(zombie);
+                // Ensure velocity is set if not paused
+                if (!this.isGamePaused) zombie.setMoveDirection(); 
+            });
+        }
+        
+        this.updateStats();
+        this.showFloatingText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 100, '游戏已读取!', '#00ff00');
+        
+        // Note: Game remains paused after load until user clicks "Continue"
+        // Update "Continue" button text just in case
+        this.pauseBtn.setText('继续');
+        this.isGamePaused = true;
+        this.physics.pause(); // Ensure physics is paused for the new entities
+        
+    } catch (e) {
+        console.error("Load failed:", e);
+        this.showFloatingText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 100, '读取失败!', '#ff0000');
     }
   }
 
