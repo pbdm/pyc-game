@@ -281,11 +281,12 @@ export class GameScene extends Phaser.Scene {
             if (this.soundManager) this.soundManager.suspend();
             this.pauseBtn.setText('继续');
             
-            // Pause all animations
+            // Pause all animations safely
             this.children.list.forEach(child => {
-                if (child.anims) child.anims.pause();
+                if (child.anims && typeof child.anims.pause === 'function') {
+                    child.anims.pause();
+                }
             });
-            this.enemies.getChildren().forEach(e => e.anims && e.anims.pause());
             
             this.createPauseMenu();
 
@@ -295,11 +296,12 @@ export class GameScene extends Phaser.Scene {
             if (this.soundManager) this.soundManager.resume();
             this.pauseBtn.setText('暂停');
             
-            // Resume all animations
+            // Resume all animations safely
             this.children.list.forEach(child => {
-                if (child.anims) child.anims.resume();
+                if (child.anims && typeof child.anims.resume === 'function') {
+                    child.anims.resume();
+                }
             });
-            this.enemies.getChildren().forEach(e => e.anims && e.anims.resume());
             
             if (this.pauseMenuElements) {
                 this.pauseMenuElements.forEach(el => el.destroy());
