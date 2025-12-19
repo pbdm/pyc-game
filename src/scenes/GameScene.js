@@ -145,8 +145,11 @@ export class GameScene extends Phaser.Scene {
     this.pauseBtn = this.add.text(SCREEN_WIDTH - 120, SCREEN_HEIGHT + 45, '暂停', { 
         fontSize: '20px', fill: '#ffff00', backgroundColor: '#000', padding: { x: 10, y: 5 } 
     })
-    .setInteractive()
-    .on('pointerdown', () => this.togglePause());
+    .setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => {
+        console.log("Pause button clicked");
+        this.togglePause();
+    });
     
     const categories = [
         { key: 'turret', label: '炮塔' }, 
@@ -269,36 +272,43 @@ export class GameScene extends Phaser.Scene {
   }
 
   togglePause() {
-    this.isGamePaused = !this.isGamePaused;
-    
-    if (this.isGamePaused) {
-        console.log("Game Paused. Creating Menu...");
-        this.physics.pause();
-        this.soundManager.suspend();
-        this.pauseBtn.setText('继续');
-        // Pause all animations
-        this.children.list.forEach(child => {
-            if (child.anims) child.anims.pause();
-        });
-        this.enemies.getChildren().forEach(e => e.anims && e.anims.pause());
+    try {
+        this.isGamePaused = !this.isGamePaused;
         
-        this.createPauseMenu();
+        if (this.isGamePaused) {
+            console.log("Game Paused. Creating Menu...");
+            this.physics.pause();
+            if (this.soundManager) this.soundManager.suspend();
+            this.pauseBtn.setText('继续');
+            
+            // Pause all animations
+            this.children.list.forEach(child => {
+                if (child.anims) child.anims.pause();
+            });
+            this.enemies.getChildren().forEach(e => e.anims && e.anims.pause());
+            
+            this.createPauseMenu();
 
-    } else {
-        console.log("Game Resumed. Destroying Menu...");
-        this.physics.resume();
-        this.soundManager.resume();
-        this.pauseBtn.setText('暂停');
-        // Resume all animations
-        this.children.list.forEach(child => {
-            if (child.anims) child.anims.resume();
-        });
-        this.enemies.getChildren().forEach(e => e.anims && e.anims.resume());
-        
-        if (this.pauseMenuElements) {
-            this.pauseMenuElements.forEach(el => el.destroy());
-            this.pauseMenuElements = [];
+        } else {
+            console.log("Game Resumed. Destroying Menu...");
+            this.physics.resume();
+            if (this.soundManager) this.soundManager.resume();
+            this.pauseBtn.setText('暂停');
+            
+            // Resume all animations
+            this.children.list.forEach(child => {
+                if (child.anims) child.anims.resume();
+            });
+            this.enemies.getChildren().forEach(e => e.anims && e.anims.resume());
+            
+            if (this.pauseMenuElements) {
+                this.pauseMenuElements.forEach(el => el.destroy());
+                this.pauseMenuElements = [];
+            }
         }
+    } catch (err) {
+        console.error("Error in togglePause:", err);
+        window.alert("Error toggling pause: " + err.message);
     }
   }
 
@@ -308,17 +318,18 @@ export class GameScene extends Phaser.Scene {
     }
     this.pauseMenuElements = [];
 
-    const cx = this.cameras.main.width / 2;
-    const cy = this.cameras.main.height / 2;
-    const w = this.cameras.main.width;
-    const h = this.cameras.main.height;
+    // Use fixed constants for consistent positioning
+    const cx = SCREEN_WIDTH / 2;
+    const cy = TOTAL_HEIGHT / 2;
+    const w = SCREEN_WIDTH;
+    const h = TOTAL_HEIGHT;
     
     console.log(`Creating Pause Menu at ${cx}, ${cy} (Screen: ${w}x${h})`);
 
     // 1. Full screen overlay
     const overlay = this.add.rectangle(cx, cy, w, h, 0x000000, 0.7);
     overlay.setScrollFactor(0);
-    overlay.setDepth(300);
+    overlay.setDepth(1000);
     overlay.setInteractive(); // Block clicks
     this.pauseMenuElements.push(overlay);
     
@@ -326,14 +337,14 @@ export class GameScene extends Phaser.Scene {
     const bg = this.add.rectangle(cx, cy, 300, 240, 0x000000, 0.9);
     bg.setStrokeStyle(2, 0xffff00);
     bg.setScrollFactor(0);
-    bg.setDepth(301);
+    bg.setDepth(1001);
     this.pauseMenuElements.push(bg);
     
     // 3. Title
     const title = this.add.text(cx, cy - 90, '游戏暂停', { fontSize: '30px', fill: '#ffff00', fontStyle: 'bold' });
     title.setOrigin(0.5);
     title.setScrollFactor(0);
-    title.setDepth(302);
+    title.setDepth(1002);
     this.pauseMenuElements.push(title);
 
     // 4. Save Button
@@ -343,7 +354,7 @@ export class GameScene extends Phaser.Scene {
     saveBtn.setOrigin(0.5);
     saveBtn.setInteractive({ useHandCursor: true });
     saveBtn.setScrollFactor(0);
-    saveBtn.setDepth(302);
+    saveBtn.setDepth(1002);
     
     saveBtn.on('pointerdown', () => this.saveGame());
     saveBtn.on('pointerover', () => saveBtn.setStyle({ fill: '#0f0' }));
@@ -357,7 +368,7 @@ export class GameScene extends Phaser.Scene {
     loadBtn.setOrigin(0.5);
     loadBtn.setInteractive({ useHandCursor: true });
     loadBtn.setScrollFactor(0);
-    loadBtn.setDepth(302);
+    loadBtn.setDepth(1002);
     
     loadBtn.on('pointerdown', () => this.loadGame());
     loadBtn.on('pointerover', () => loadBtn.setStyle({ fill: '#0f0' }));
