@@ -450,7 +450,18 @@ export class GameScene extends Phaser.Scene {
         this.projectiles.clear(true, true);
         this.defenseItems.clear(true, true);
         this.traps.clear(true, true);
-        this.particles.emitters.list.forEach(e => e.stop()); 
+        
+        // Safely stop particles
+        if (this.particles) {
+            // Check if it's a manager with emitters list
+            if (this.particles.emitters && this.particles.emitters.list) {
+                this.particles.emitters.list.forEach(e => e.stop());
+            } 
+            // Or if it's a single emitter (Phaser 3.60+)
+            else if (typeof this.particles.stop === 'function') {
+                this.particles.stop();
+            }
+        }
         
         // Restore Entities
         if (data.turrets) {
