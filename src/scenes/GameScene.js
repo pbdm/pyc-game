@@ -376,17 +376,30 @@ export class GameScene extends Phaser.Scene {
     loadBtn.on('pointerover', () => loadBtn.setStyle({ fill: '#0f0' }));
     loadBtn.on('pointerout', () => loadBtn.setStyle({ fill: '#fff' }));
     this.pauseMenuElements.push(loadBtn);
+
+    // 6. Close Button (X)
+    const closeBtn = this.add.text(cx + 130, cy - 100, 'X', { 
+        fontSize: '24px', fill: '#ff0000', backgroundColor: '#000', padding: { x: 5, y: 5 } 
+    });
+    closeBtn.setOrigin(0.5);
+    closeBtn.setInteractive({ useHandCursor: true });
+    closeBtn.setScrollFactor(0);
+    closeBtn.setDepth(1003);
+    
+    closeBtn.on('pointerdown', () => this.togglePause()); // Re-use togglePause to close
+    this.pauseMenuElements.push(closeBtn);
   }
 
   saveGame() {
     try {
+        console.log("Attempting to save game...");
         const gameState = {
             gold: this.gold,
             baseHp: this.baseHp,
             waveIndex: this.waveIndex,
             waveActive: this.waveActive,
             enemiesRemainingToSpawn: this.enemiesRemainingToSpawn,
-            spawnTimer: this.spawnTimer, // Approximation
+            spawnTimer: this.spawnTimer, 
             turrets: this.turrets.getChildren().map(t => ({
                 x: t.x, y: t.y, type: t.turretType, level: t.level || 1
             })),
@@ -402,18 +415,22 @@ export class GameScene extends Phaser.Scene {
         };
         
         localStorage.setItem('pyc_tower_defense_save', JSON.stringify(gameState));
+        console.log("Game saved successfully.");
         this.showFloatingText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 100, '游戏已保存!', '#00ff00');
+        window.alert("游戏已保存!");
     } catch (e) {
         console.error("Save failed:", e);
-        this.showFloatingText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 100, '保存失败!', '#ff0000');
+        window.alert("保存失败: " + e.message);
     }
   }
 
   loadGame() {
     try {
+        console.log("Attempting to load game...");
         const saveString = localStorage.getItem('pyc_tower_defense_save');
         if (!saveString) {
-            this.showFloatingText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 100, '没有找到存档!', '#ff0000');
+            console.warn("No save file found.");
+            window.alert("没有找到存档!");
             return;
         }
         
@@ -425,8 +442,6 @@ export class GameScene extends Phaser.Scene {
         this.waveIndex = data.waveIndex;
         this.waveActive = data.waveActive;
         this.enemiesRemainingToSpawn = data.enemiesRemainingToSpawn || [];
-        // Reset spawn timer so it doesn't immediately spawn everything if time jumped? 
-        // Actually, just keep active.
         this.spawnTimer = this.time.now; 
         
         // Clear existing groups
@@ -435,7 +450,7 @@ export class GameScene extends Phaser.Scene {
         this.projectiles.clear(true, true);
         this.defenseItems.clear(true, true);
         this.traps.clear(true, true);
-        this.particles.emitters.list.forEach(e => e.stop()); // Stop particles
+        this.particles.emitters.list.forEach(e => e.stop()); 
         
         // Restore Entities
         if (data.turrets) {
@@ -470,23 +485,20 @@ export class GameScene extends Phaser.Scene {
                 const zombie = new Zombie(this, e.x, e.y, e.type);
                 if (e.hp !== undefined) zombie.hp = e.hp;
                 this.enemies.add(zombie);
-                // Ensure velocity is set if not paused
                 if (!this.isGamePaused) zombie.setMoveDirection(); 
             });
         }
         
         this.updateStats();
-        this.showFloatingText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 100, '游戏已读取!', '#00ff00');
+        console.log("Game loaded successfully.");
+        window.alert("游戏已读取!");
         
-        // Note: Game remains paused after load until user clicks "Continue"
-        // Update "Continue" button text just in case
-        this.pauseBtn.setText('继续');
-        this.isGamePaused = true;
-        this.physics.pause(); // Ensure physics is paused for the new entities
+        // Close menu and resume
+        this.togglePause(); 
         
     } catch (e) {
         console.error("Load failed:", e);
-        this.showFloatingText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 100, '读取失败!', '#ff0000');
+        window.alert("读取失败: " + e.message);
     }
   }
 
