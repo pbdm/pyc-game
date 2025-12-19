@@ -5,6 +5,7 @@ export class SoundManager {
   }
 
   playShoot() {
+    if (this.ctx.state === 'suspended' && this.scene.isGamePaused) return;
     if (this.ctx.state === 'suspended') this.ctx.resume();
     
     const osc = this.ctx.createOscillator();
@@ -25,6 +26,7 @@ export class SoundManager {
   }
 
   playHit() {
+    if (this.ctx.state === 'suspended' && this.scene.isGamePaused) return;
     if (this.ctx.state === 'suspended') this.ctx.resume();
     
     const osc = this.ctx.createOscillator();
@@ -45,6 +47,7 @@ export class SoundManager {
   }
   
   playExplosion() {
+    if (this.ctx.state === 'suspended' && this.scene.isGamePaused) return;
     if (this.ctx.state === 'suspended') this.ctx.resume();
     
     const duration = 0.3;
@@ -71,6 +74,7 @@ export class SoundManager {
   }
 
   playBaseDamage() {
+    if (this.ctx.state === 'suspended' && this.scene.isGamePaused) return;
     if (this.ctx.state === 'suspended') this.ctx.resume();
     
     // Intense Low Frequency Oscillator (Boom)
@@ -91,5 +95,17 @@ export class SoundManager {
 
     // Add noise layer for impact
     this.playExplosion(); 
+  }
+
+  suspend() {
+    if (this.ctx.state === 'running') {
+      this.ctx.suspend();
+    }
+  }
+
+  resume() {
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
   }
 }

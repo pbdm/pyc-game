@@ -19,6 +19,8 @@ export class Turret extends Entity {
   }
 
   update(time, delta) {
+    if (this.scene.isGamePaused) return;
+
     // rate is attacks per second (e.g. 1 for basic). 
     // Interval = 1000 / rate.
     if (time > this.lastFired + (1000 / this.stats.rate)) { 

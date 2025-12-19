@@ -66,3 +66,6 @@ export const SPEED_MULTIPLIER = 10; // Speed 10 * 10 = 100px/s.
 
 export const BASE_HP = 1000;
 export const INITIAL_GOLD = 650;
+
+export const VERSION = '1.0.1';
+export const PUBLISH_TIME = '2025-12-18';

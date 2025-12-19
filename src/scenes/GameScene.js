@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { 
   GRID_SIZE, GRID_COLS, GRID_ROWS, COLORS, SCREEN_HEIGHT, SCREEN_WIDTH, TOTAL_HEIGHT,
   TURRET_STATS, TRAP_STATS, DEFENSE_ITEM_STATS, DEFENSE_TOOL_STATS,
-  INITIAL_GOLD, BASE_HP
+  INITIAL_GOLD, BASE_HP, VERSION, PUBLISH_TIME
 } from '../config/constants';
 import { WAVES } from '../config/waves';
 import { Turret } from '../entities/Turret';
@@ -25,6 +25,7 @@ export class GameScene extends Phaser.Scene {
     this.selectedItem = null; // { type: 'turret', key: 'basic' }
     this.shopCategory = 'turret'; // 'turret', 'trap', 'defense', 'tool'
     this.isPopupOpen = false;
+    this.isGamePaused = false;
   }
 
   create() {
@@ -139,6 +140,13 @@ export class GameScene extends Phaser.Scene {
     })
     .setInteractive()
     .on('pointerdown', () => this.startWave());
+
+    // Pause Button
+    this.pauseBtn = this.add.text(SCREEN_WIDTH - 120, SCREEN_HEIGHT + 45, '暂停', { 
+        fontSize: '20px', fill: '#ffff00', backgroundColor: '#000', padding: { x: 10, y: 5 } 
+    })
+    .setInteractive()
+    .on('pointerdown', () => this.togglePause());
     
     const categories = [
         { key: 'turret', label: '炮塔' }, 
@@ -156,6 +164,12 @@ export class GameScene extends Phaser.Scene {
     
     this.shopContainer = this.add.container(10, SCREEN_HEIGHT + 70);
     this.updateShopUI();
+
+    // Version and Publish Time
+    this.add.text(SCREEN_WIDTH - 10, TOTAL_HEIGHT - 10, `v${VERSION} (${PUBLISH_TIME})`, {
+        fontSize: '12px',
+        fill: '#666'
+    }).setOrigin(1, 1);
   }
 
   selectCategory(cat) {
@@ -186,7 +200,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   onMapClick(pointer) {
-    if (this.isPopupOpen) return;
+    if (this.isPopupOpen || this.isGamePaused) return;
     if (pointer.y > SCREEN_HEIGHT) return;
     if (!this.selectedItem) return;
     
@@ -254,7 +268,33 @@ export class GameScene extends Phaser.Scene {
     Phaser.Utils.Array.Shuffle(this.enemiesRemainingToSpawn);
   }
 
+  togglePause() {
+    this.isGamePaused = !this.isGamePaused;
+    
+    if (this.isGamePaused) {
+        this.physics.pause();
+        this.soundManager.suspend();
+        this.pauseBtn.setText('继续');
+        // Pause all animations
+        this.children.list.forEach(child => {
+            if (child.anims) child.anims.pause();
+        });
+        this.enemies.getChildren().forEach(e => e.anims && e.anims.pause());
+    } else {
+        this.physics.resume();
+        this.soundManager.resume();
+        this.pauseBtn.setText('暂停');
+        // Resume all animations
+        this.children.list.forEach(child => {
+            if (child.anims) child.anims.resume();
+        });
+        this.enemies.getChildren().forEach(e => e.anims && e.anims.resume());
+    }
+  }
+
   update(time, delta) {
+    if (this.isGamePaused) return;
+
     if (this.waveActive) {
         if (this.enemiesRemainingToSpawn.length > 0) {
             if (time > this.spawnTimer + 1000) {
@@ -361,10 +401,13 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive()
       .on('pointerdown', () => {
-          this.isPopupOpen = false;
           overlay.destroy();
           container.destroy();
           this.startWave();
+          // Delay resetting popup state to prevent click propagation to map
+          this.time.delayedCall(50, () => {
+              this.isPopupOpen = false;
+          });
       });
       
       container.add([bg, title, nextBtn]);
