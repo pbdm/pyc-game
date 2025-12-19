@@ -272,6 +272,7 @@ export class GameScene extends Phaser.Scene {
     this.isGamePaused = !this.isGamePaused;
     
     if (this.isGamePaused) {
+        console.log("Game Paused");
         this.physics.pause();
         this.soundManager.suspend();
         this.pauseBtn.setText('继续');
@@ -284,6 +285,7 @@ export class GameScene extends Phaser.Scene {
         this.createPauseMenu();
 
     } else {
+        console.log("Game Resumed");
         this.physics.resume();
         this.soundManager.resume();
         this.pauseBtn.setText('暂停');
@@ -301,16 +303,31 @@ export class GameScene extends Phaser.Scene {
   }
 
   createPauseMenu() {
-    this.pauseMenuContainer = this.add.container(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+    if (this.pauseMenuContainer) {
+        this.pauseMenuContainer.destroy();
+    }
+
+    // Use absolute coordinates for container (0, 0)
+    this.pauseMenuContainer = this.add.container(0, 0);
+    this.pauseMenuContainer.setDepth(300); // Higher depth
+    this.pauseMenuContainer.setScrollFactor(0); // Fix to screen
     
-    // Background
-    const bg = this.add.rectangle(0, 0, 300, 240, 0x000000, 0.9);
+    // Full screen overlay
+    const overlay = this.add.rectangle(SCREEN_WIDTH/2, TOTAL_HEIGHT/2, SCREEN_WIDTH, TOTAL_HEIGHT, 0x000000, 0.7);
+    overlay.setInteractive(); // Block clicks to game below
+    
+    // Center of the playable area (approximately)
+    const cx = SCREEN_WIDTH / 2;
+    const cy = SCREEN_HEIGHT / 2;
+    
+    // Menu Background
+    const bg = this.add.rectangle(cx, cy, 300, 240, 0x000000, 0.9);
     bg.setStrokeStyle(2, 0xffff00);
     
-    const title = this.add.text(0, -90, '游戏暂停', { fontSize: '30px', fill: '#ffff00', fontStyle: 'bold' }).setOrigin(0.5);
+    const title = this.add.text(cx, cy - 90, '游戏暂停', { fontSize: '30px', fill: '#ffff00', fontStyle: 'bold' }).setOrigin(0.5);
 
     // Save Button
-    const saveBtn = this.add.text(0, -20, '保存游戏', { 
+    const saveBtn = this.add.text(cx, cy - 20, '保存游戏', { 
         fontSize: '24px', fill: '#fff', backgroundColor: '#333', padding: { x: 20, y: 10 } 
     })
     .setOrigin(0.5)
@@ -320,7 +337,7 @@ export class GameScene extends Phaser.Scene {
     .on('pointerout', () => saveBtn.setStyle({ fill: '#fff' }));
         
     // Load Button
-    const loadBtn = this.add.text(0, 60, '读取存档', { 
+    const loadBtn = this.add.text(cx, cy + 60, '读取存档', { 
         fontSize: '24px', fill: '#fff', backgroundColor: '#333', padding: { x: 20, y: 10 } 
     })
     .setOrigin(0.5)
@@ -329,8 +346,9 @@ export class GameScene extends Phaser.Scene {
     .on('pointerover', () => loadBtn.setStyle({ fill: '#0f0' }))
     .on('pointerout', () => loadBtn.setStyle({ fill: '#fff' }));
 
-    this.pauseMenuContainer.add([bg, title, saveBtn, loadBtn]);
-    this.pauseMenuContainer.setDepth(200);
+    this.pauseMenuContainer.add([overlay, bg, title, saveBtn, loadBtn]);
+    
+    console.log("Pause menu created at depth 300");
   }
 
   saveGame() {
