@@ -28,6 +28,15 @@ export class Zombie extends Phaser.GameObjects.Sprite {
     this.anims.timeScale = this.speed / 100;
 
     this.hpBar = this.scene.add.graphics();
+    
+    // Ensure HP bar is destroyed when zombie is destroyed
+    this.on('destroy', () => {
+        if (this.hpBar) {
+            this.hpBar.destroy();
+        }
+    });
+
+    this.updateHpBar();
 
     this.lastAttackTime = 0;
     this.attackRate = 1000; // Attack once per second
@@ -100,7 +109,6 @@ export class Zombie extends Phaser.GameObjects.Sprite {
     this.scene.createExplosion(this.x, this.y, this.stats.color, 20);
     this.scene.soundManager.playExplosion();
     this.scene.events.emit('zombieKilled', this.stats.reward);
-    this.hpBar.destroy();
     this.destroy();
   }
 
