@@ -57,6 +57,47 @@ export class GameScene extends Phaser.Scene {
         this.gold += reward;
         this.updateStats();
     });
+
+    // Orientation check for mobile
+    if (!this.sys.game.device.os.desktop) {
+        this.checkOrientation();
+        this.scale.on('orientationchange', () => this.checkOrientation());
+    }
+  }
+
+  checkOrientation() {
+      if (this.scale.orientation === Phaser.Scale.PORTRAIT) {
+          this.showOrientationOverlay();
+      } else {
+          this.hideOrientationOverlay();
+      }
+  }
+
+  showOrientationOverlay() {
+      if (this.orientationOverlay) return;
+
+      this.orientationOverlay = this.add.container(0, 0).setDepth(2000);
+      
+      const bg = this.add.rectangle(0, 0, SCREEN_WIDTH, TOTAL_HEIGHT, 0x000000, 0.9).setOrigin(0);
+      const text = this.add.text(SCREEN_WIDTH/2, TOTAL_HEIGHT/2, '请横屏旋转手机以获得最佳体验\n\nPlease rotate your device to landscape', {
+          fontSize: '32px',
+          fill: '#fff',
+          align: 'center',
+          wordWrap: { width: SCREEN_WIDTH - 100 }
+      }).setOrigin(0.5);
+
+      this.orientationOverlay.add([bg, text]);
+      this.physics.pause();
+  }
+
+  hideOrientationOverlay() {
+      if (this.orientationOverlay) {
+          this.orientationOverlay.destroy();
+          this.orientationOverlay = null;
+          if (!this.isGamePaused && !this.isPopupOpen) {
+              this.physics.resume();
+          }
+      }
   }
 
   createEffects() {
@@ -150,6 +191,19 @@ export class GameScene extends Phaser.Scene {
         console.log("Pause button clicked");
         this.togglePause();
     });
+
+    // Fullscreen Button
+    this.fullscreenBtn = this.add.text(SCREEN_WIDTH - 120, SCREEN_HEIGHT + 80, '全屏', { 
+        fontSize: '20px', fill: '#00ffff', backgroundColor: '#000', padding: { x: 10, y: 5 } 
+    })
+    .setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => {
+        if (this.scale.isFullscreen) {
+            this.scale.stopFullscreen();
+        } else {
+            this.scale.startFullscreen();
+        }
+    });
     
     const categories = [
         { key: 'turret', label: '炮塔' }, 
@@ -159,13 +213,13 @@ export class GameScene extends Phaser.Scene {
     ];
     let catX = 10;
     categories.forEach(cat => {
-        this.add.text(catX, SCREEN_HEIGHT + 40, cat.label, { fontSize: '16px', fill: '#aaa' })
+        this.add.text(catX, SCREEN_HEIGHT + 40, cat.label, { fontSize: '20px', fill: '#aaa' })
             .setInteractive()
             .on('pointerdown', () => this.selectCategory(cat.key));
-        catX += 100;
+        catX += 110;
     });
     
-    this.shopContainer = this.add.container(10, SCREEN_HEIGHT + 70);
+    this.shopContainer = this.add.container(10, SCREEN_HEIGHT + 75);
     this.updateShopUI();
 
     // Version and Publish Time
@@ -191,14 +245,14 @@ export class GameScene extends Phaser.Scene {
     let x = 0;
     for (const [key, stat] of Object.entries(items)) {
         const btn = this.add.text(x, 0, `${stat.name}\n$${stat.cost}`, { 
-            fontSize: '12px', fill: '#fff', backgroundColor: '#444', padding: { x: 5, y: 5 }, align: 'center'
+            fontSize: '14px', fill: '#fff', backgroundColor: '#444', padding: { x: 8, y: 8 }, align: 'center'
         })
         .setInteractive()
         .on('pointerdown', () => {
             this.selectedItem = { type: this.shopCategory, key, stat };
         });
         this.shopContainer.add(btn);
-        x += 80;
+        x += 100;
     }
   }
 
