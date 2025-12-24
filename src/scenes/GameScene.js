@@ -169,64 +169,68 @@ export class GameScene extends Phaser.Scene {
   }
 
   createUI() {
-    this.add.rectangle(SCREEN_WIDTH/2, SCREEN_HEIGHT + 75, SCREEN_WIDTH, 150, COLORS.UI_BACKGROUND);
+    // Background for bottom UI
+    this.add.rectangle(SCREEN_WIDTH/2, SCREEN_HEIGHT + 75, SCREEN_WIDTH, 150, COLORS.UI_BACKGROUND)
+        .setScrollFactor(0).setDepth(1000);
     
-    this.goldText = this.add.text(10, SCREEN_HEIGHT + 10, `金币: ${this.gold}`, { fontSize: '20px', fill: '#fff' });
-    this.hpText = this.add.text(150, SCREEN_HEIGHT + 10, `生命: ${this.baseHp}`, { fontSize: '20px', fill: '#fff' });
-    this.waveText = this.add.text(300, SCREEN_HEIGHT + 10, `波数: ${this.waveIndex + 1}`, { fontSize: '20px', fill: '#fff' });
-    this.enemiesText = this.add.text(450, SCREEN_HEIGHT + 10, `剩余: 0`, { fontSize: '20px', fill: '#ffaaaa' });
-    
-    const nextWaveBtn = this.add.text(SCREEN_WIDTH - 120, SCREEN_HEIGHT + 10, '开始波数', { 
-        fontSize: '20px', fill: '#0f0', backgroundColor: '#000', padding: { x: 10, y: 5 } 
+    // 1. Action Buttons (Top Left - High Visibility)
+    this.fullscreenBtn = this.add.text(20, 20, ' 全屏 ', { 
+        fontSize: '32px', fill: '#fff', backgroundColor: '#0088ff', padding: { x: 15, y: 10 } 
     })
-    .setInteractive()
+    .setScrollFactor(0).setDepth(2001).setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => {
+        if (this.scale.isFullscreen) this.scale.stopFullscreen();
+        else this.scale.startFullscreen();
+    });
+
+    this.pauseBtn = this.add.text(140, 20, ' 暂停 ', { 
+        fontSize: '32px', fill: '#000', backgroundColor: '#ffff00', padding: { x: 15, y: 10 } 
+    })
+    .setScrollFactor(0).setDepth(2001).setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => this.togglePause());
+
+    // 2. Stats (Top Right)
+    const statStyle = { fontSize: '24px', fill: '#fff', stroke: '#000', strokeThickness: 4 };
+    this.goldText = this.add.text(SCREEN_WIDTH - 20, 20, `金币: ${this.gold}`, statStyle)
+        .setOrigin(1, 0).setScrollFactor(0).setDepth(2001);
+    this.hpText = this.add.text(SCREEN_WIDTH - 20, 55, `生命: ${this.baseHp}`, statStyle)
+        .setOrigin(1, 0).setScrollFactor(0).setDepth(2001);
+    this.waveText = this.add.text(SCREEN_WIDTH - 20, 90, `波数: ${this.waveIndex + 1}`, statStyle)
+        .setOrigin(1, 0).setScrollFactor(0).setDepth(2001);
+    this.enemiesText = this.add.text(SCREEN_WIDTH - 20, 125, `剩余: 0`, { ...statStyle, fill: '#ffaaaa' })
+        .setOrigin(1, 0).setScrollFactor(0).setDepth(2001);
+
+    // 3. Shop Area (Bottom Left)
+    const categories = [
+        { key: 'turret', label: ' 炮塔 ' }, 
+        { key: 'trap', label: ' 陷阱 ' }, 
+        { key: 'defense', label: ' 防御 ' }, 
+        { key: 'tool', label: ' 工具 ' }
+    ];
+    let catX = 20;
+    categories.forEach(cat => {
+        this.add.text(catX, SCREEN_HEIGHT + 15, cat.label, { 
+            fontSize: '24px', fill: '#fff', backgroundColor: '#555', padding: { x: 12, y: 8 } 
+        })
+        .setScrollFactor(0).setDepth(1001).setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => this.selectCategory(cat.key));
+        catX += 120;
+    });
+    
+    this.shopContainer = this.add.container(20, SCREEN_HEIGHT + 75).setScrollFactor(0).setDepth(1001);
+    this.updateShopUI();
+    
+    // 4. Start Wave Button (Bottom Right)
+    const nextWaveBtn = this.add.text(SCREEN_WIDTH - 20, SCREEN_HEIGHT + 40, ' 开始波数 ', { 
+        fontSize: '36px', fill: '#fff', backgroundColor: '#00aa00', padding: { x: 25, y: 15 } 
+    })
+    .setOrigin(1, 0).setScrollFactor(0).setDepth(1001).setInteractive({ useHandCursor: true })
     .on('pointerdown', () => this.startWave());
 
-    // Pause Button
-    this.pauseBtn = this.add.text(SCREEN_WIDTH - 120, SCREEN_HEIGHT + 45, '暂停', { 
-        fontSize: '20px', fill: '#ffff00', backgroundColor: '#000', padding: { x: 10, y: 5 } 
-    })
-    .setInteractive({ useHandCursor: true })
-    .on('pointerdown', () => {
-        console.log("Pause button clicked");
-        this.togglePause();
-    });
-
-    // Fullscreen Button
-    this.fullscreenBtn = this.add.text(SCREEN_WIDTH - 120, SCREEN_HEIGHT + 80, '全屏', { 
-        fontSize: '20px', fill: '#00ffff', backgroundColor: '#000', padding: { x: 10, y: 5 } 
-    })
-    .setInteractive({ useHandCursor: true })
-    .on('pointerdown', () => {
-        if (this.scale.isFullscreen) {
-            this.scale.stopFullscreen();
-        } else {
-            this.scale.startFullscreen();
-        }
-    });
-    
-    const categories = [
-        { key: 'turret', label: '炮塔' }, 
-        { key: 'trap', label: '陷阱' }, 
-        { key: 'defense', label: '防御' }, 
-        { key: 'tool', label: '工具' }
-    ];
-    let catX = 10;
-    categories.forEach(cat => {
-        this.add.text(catX, SCREEN_HEIGHT + 40, cat.label, { fontSize: '20px', fill: '#aaa' })
-            .setInteractive()
-            .on('pointerdown', () => this.selectCategory(cat.key));
-        catX += 110;
-    });
-    
-    this.shopContainer = this.add.container(10, SCREEN_HEIGHT + 75);
-    this.updateShopUI();
-
-    // Version and Publish Time
-    this.add.text(SCREEN_WIDTH - 10, TOTAL_HEIGHT - 10, `v${VERSION} (${PUBLISH_TIME})`, {
-        fontSize: '12px',
-        fill: '#666'
-    }).setOrigin(1, 1);
+    // Version
+    this.add.text(SCREEN_WIDTH - 10, TOTAL_HEIGHT - 5, `v${VERSION} (${PUBLISH_TIME})`, {
+        fontSize: '12px', fill: '#666'
+    }).setOrigin(1, 1).setScrollFactor(0).setDepth(1001);
   }
 
   selectCategory(cat) {
@@ -244,15 +248,21 @@ export class GameScene extends Phaser.Scene {
     
     let x = 0;
     for (const [key, stat] of Object.entries(items)) {
+        const isSelected = this.selectedItem && this.selectedItem.key === key;
         const btn = this.add.text(x, 0, `${stat.name}\n$${stat.cost}`, { 
-            fontSize: '14px', fill: '#fff', backgroundColor: '#444', padding: { x: 8, y: 8 }, align: 'center'
+            fontSize: '18px', 
+            fill: '#fff', 
+            backgroundColor: isSelected ? '#ffaa00' : '#444', 
+            padding: { x: 15, y: 15 }, 
+            align: 'center'
         })
-        .setInteractive()
+        .setInteractive({ useHandCursor: true })
         .on('pointerdown', () => {
             this.selectedItem = { type: this.shopCategory, key, stat };
+            this.updateShopUI(); // Refresh to show selection highlight
         });
         this.shopContainer.add(btn);
-        x += 100;
+        x += 130;
     }
   }
 
