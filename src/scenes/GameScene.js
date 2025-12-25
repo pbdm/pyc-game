@@ -58,11 +58,60 @@ export class GameScene extends Phaser.Scene {
         this.updateStats();
     });
 
+    // Keyboard Shortcuts
+    this.createKeyboardShortcuts();
+
     // Orientation check for mobile
     if (!this.sys.game.device.os.desktop) {
         this.checkOrientation();
         this.scale.on('orientationchange', () => this.checkOrientation());
     }
+  }
+
+  createKeyboardShortcuts() {
+      // Pause - Space
+      this.input.keyboard.on('keydown-SPACE', () => {
+          this.togglePause();
+      });
+
+      // Start Wave - Shift
+      this.input.keyboard.on('keydown-SHIFT', () => {
+          if (!this.waveActive && !this.isPopupOpen) {
+              this.startWave();
+          }
+      });
+
+      // Shop Categories - F1 to F4
+      const categoryKeys = ['F1', 'F2', 'F3', 'F4'];
+      const categories = ['turret', 'trap', 'defense', 'tool'];
+      categoryKeys.forEach((key, index) => {
+          this.input.keyboard.on(`keydown-${key}`, (event) => {
+              event.preventDefault(); // Prevent default browser F-key behavior
+              this.selectCategory(categories[index]);
+          });
+      });
+
+      // Select Items - 1 to 9
+      for (let i = 1; i <= 9; i++) {
+          this.input.keyboard.on(`keydown-${i}`, () => {
+              this.selectItemByIndex(i - 1);
+          });
+      }
+  }
+
+  selectItemByIndex(index) {
+      let items = {};
+      if (this.shopCategory === 'turret') items = TURRET_STATS;
+      else if (this.shopCategory === 'trap') items = TRAP_STATS;
+      else if (this.shopCategory === 'defense') items = DEFENSE_ITEM_STATS;
+      else items = DEFENSE_TOOL_STATS;
+
+      const keys = Object.keys(items);
+      if (index < keys.length) {
+          const key = keys[index];
+          this.selectedItem = { type: this.shopCategory, key, stat: items[key] };
+          this.updateShopUI();
+      }
   }
 
   checkOrientation() {
