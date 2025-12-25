@@ -39,6 +39,11 @@ export class GameScene extends Phaser.Scene {
     // Inputs
     this.input.on('pointerdown', this.onMapClick, this);
     
+    // Ensure game is focused for keyboard events
+    window.addEventListener('click', () => {
+        window.focus();
+    });
+
     // Collisions
     this.physics.add.overlap(this.projectiles, this.enemies, this.onProjectileHit, null, this);
     
