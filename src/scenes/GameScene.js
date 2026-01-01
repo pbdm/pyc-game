@@ -24,6 +24,8 @@ export class GameScene extends Phaser.Scene {
     
     this.selectedItem = null; // { type: 'turret', key: 'basic' }
     this.shopCategory = 'turret'; // 'turret', 'trap', 'defense', 'tool'
+    this.isDeleteMode = false;
+    this.skipFirstDelete = false;
     this.isPopupOpen = false;
     this.isGamePaused = false;
   }
@@ -102,6 +104,11 @@ export class GameScene extends Phaser.Scene {
               this.selectItemByIndex(i - 1);
           });
       }
+
+      // Delete Mode - Enter
+      this.input.keyboard.on('keydown-ENTER', () => {
+          this.toggleDeleteMode();
+      });
   }
 
   selectItemByIndex(index) {
@@ -272,6 +279,12 @@ export class GameScene extends Phaser.Scene {
         .on('pointerdown', () => this.selectCategory(cat.key));
         catX += 120;
     });
+
+    this.deleteBtn = this.add.text(catX, SCREEN_HEIGHT + 15, ' 删除 ', { 
+        fontSize: '24px', fill: '#fff', backgroundColor: '#aa0000', padding: { x: 12, y: 8 } 
+    })
+    .setScrollFactor(0).setDepth(1001).setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => this.toggleDeleteMode(true));
     
     this.shopContainer = this.add.container(20, SCREEN_HEIGHT + 75).setScrollFactor(0).setDepth(1001);
     this.updateShopUI();
@@ -292,11 +305,30 @@ export class GameScene extends Phaser.Scene {
 
   selectCategory(cat) {
     this.shopCategory = cat;
+    this.isDeleteMode = false; // Turn off delete mode when selecting a category
+    this.updateShopUI();
+  }
+
+  toggleDeleteMode(fromButton = false) {
+    this.isDeleteMode = !this.isDeleteMode;
+    if (this.isDeleteMode) {
+        this.selectedItem = null;
+        this.skipFirstDelete = fromButton; // If from button, skip the very next click if desired
+        this.showFloatingText(SCREEN_WIDTH/2, SCREEN_HEIGHT/2, '删除模式: 已开启', '#ff0000');
+    } else {
+        this.showFloatingText(SCREEN_WIDTH/2, SCREEN_HEIGHT/2, '删除模式: 已关闭', '#00ff00');
+    }
     this.updateShopUI();
   }
 
   updateShopUI() {
     this.shopContainer.removeAll(true);
+    
+    // Highlight delete button if active
+    if (this.deleteBtn) {
+        this.deleteBtn.setBackgroundColor(this.isDeleteMode ? '#ff0000' : '#aa0000');
+    }
+
     let items = {};
     if (this.shopCategory === 'turret') items = TURRET_STATS;
     else if (this.shopCategory === 'trap') items = TRAP_STATS;
@@ -326,10 +358,20 @@ export class GameScene extends Phaser.Scene {
   onMapClick(pointer) {
     if (this.isPopupOpen || this.isGamePaused) return;
     if (pointer.y > SCREEN_HEIGHT) return;
-    if (!this.selectedItem) return;
     
     const gridX = Math.floor(pointer.x / GRID_SIZE);
     const gridY = Math.floor(pointer.y / GRID_SIZE);
+    
+    if (this.isDeleteMode) {
+        if (this.skipFirstDelete) {
+            this.skipFirstDelete = false;
+            return;
+        }
+        this.deleteAt(gridX, gridY);
+        return;
+    }
+
+    if (!this.selectedItem) return;
     
     const x = gridX * GRID_SIZE + GRID_SIZE/2;
     const y = gridY * GRID_SIZE + GRID_SIZE/2;
@@ -368,6 +410,38 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  deleteAt(gridX, gridY) {
+    const x = gridX * GRID_SIZE + GRID_SIZE/2;
+    const y = gridY * GRID_SIZE + GRID_SIZE/2;
+    
+    const groups = [this.turrets, this.defenseItems, this.traps];
+    let totalRefund = 0;
+    let deleted = false;
+    
+    groups.forEach(group => {
+        group.getChildren().forEach(item => {
+            if (item.active && Math.abs(item.x - x) < 5 && Math.abs(item.y - y) < 5) {
+                if (item.stats && item.stats.cost) {
+                    totalRefund += Math.floor(item.stats.cost * 0.5);
+                }
+                item.destroy();
+                deleted = true;
+            }
+        });
+    });
+    
+    if (deleted) {
+        if (totalRefund > 0) {
+            this.gold += totalRefund;
+            this.updateStats();
+            this.showFloatingText(x, y, `已回收 +$${totalRefund}`, '#ffff00');
+        } else {
+            this.showFloatingText(x, y, '已回收', '#ff0000');
+        }
+        this.soundManager.playExplosion(); // Reuse explosion sound for deletion feedback
+    }
+  }
+
   startWave() {
     if (this.waveActive || this.waveIndex >= WAVES.length) return;
     
@@ -394,9 +468,10 @@ export class GameScene extends Phaser.Scene {
 
   togglePause() {
     try {
-        this.isGamePaused = !this.isGamePaused;
-        
-        if (this.isGamePaused) {
+        if (!this.isGamePaused) {
+            // Pausing
+            this.isGamePaused = true;
+            this.isPopupOpen = true;
             console.log("Game Paused. Creating Menu...");
             this.physics.pause();
             if (this.soundManager) this.soundManager.suspend();
@@ -412,6 +487,7 @@ export class GameScene extends Phaser.Scene {
             this.createPauseMenu();
 
         } else {
+            // Resuming
             console.log("Game Resumed. Destroying Menu...");
             this.physics.resume();
             if (this.soundManager) this.soundManager.resume();
@@ -428,6 +504,12 @@ export class GameScene extends Phaser.Scene {
                 this.pauseMenuElements.forEach(el => el.destroy());
                 this.pauseMenuElements = [];
             }
+
+            // Delayed reset of pause state to prevent click propagation to map
+            this.time.delayedCall(100, () => {
+                this.isGamePaused = false;
+                this.isPopupOpen = false;
+            });
         }
     } catch (err) {
         console.error("Error in togglePause:", err);

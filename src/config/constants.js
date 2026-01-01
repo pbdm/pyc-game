@@ -19,7 +19,7 @@ export const TURRET_STATS = {
   'basic': { name: '基础塔', range: 100, rate: 60/60, damage: 50, cost: 50, color: 0xaaaaaa },
   'sniper': { name: '狙击塔', range: 100, rate: 40/60, damage: 100, cost: 100, color: 0x555555 },
   'cannon': { name: '炮塔', range: 150, rate: 100/60, damage: 100, cost: 150, color: 0x000000 },
-  'laser': { name: '激光塔', range: 800, rate: 200/60, damage: 150, cost: 300, color: 0xff0000 },
+  'laser': { name: '激光塔', range: 800, rate: 3200/60, damage: 10, cost: 300, color: 0xff0000 },
   'bomber': { name: '轰炸塔', range: 200, rate: 200/60, damage: 200, cost: 500, color: 0x00ff00 },
   'atomic': { name: '原子塔', range: 400, rate: 600/60, damage: 500, cost: 1000, color: 0x00ffff },
   'defense': { name: '防守塔', range: 140, rate: 90/60, damage: 250, cost: 200, color: 0xffff00 },
