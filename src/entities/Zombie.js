@@ -27,12 +27,22 @@ export class Zombie extends Phaser.GameObjects.Sprite {
     // Base speed is ~100.
     this.anims.timeScale = this.speed / 100;
 
+    this.nameText = this.scene.add.text(x, y - GRID_SIZE/2 - 18, this.stats.name, {
+        fontSize: '12px',
+        fill: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 3,
+    }).setOrigin(0.5);
+
     this.hpBar = this.scene.add.graphics();
     
     // Ensure HP bar is destroyed when zombie is destroyed
     this.on('destroy', () => {
         if (this.hpBar) {
             this.hpBar.destroy();
+        }
+        if (this.nameText) {
+            this.nameText.destroy();
         }
     });
 
@@ -71,6 +81,7 @@ export class Zombie extends Phaser.GameObjects.Sprite {
 
   update(time, delta) {
     this.updateHpBar();
+    this.nameText.setPosition(this.x, this.y - GRID_SIZE/2 - 18);
     
     // Force velocity every frame to ensure it moves
     if (this.body) {

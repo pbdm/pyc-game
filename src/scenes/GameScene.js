@@ -15,6 +15,14 @@ import { SoundManager } from '../managers/SoundManager';
 export class GameScene extends Phaser.Scene {
   constructor() {
     super('GameScene');
+    this.resetState();
+  }
+
+  init() {
+    this.resetState();
+  }
+
+  resetState() {
     this.gold = INITIAL_GOLD;
     this.baseHp = BASE_HP;
     this.waveIndex = 0;
@@ -22,8 +30,8 @@ export class GameScene extends Phaser.Scene {
     this.spawnTimer = 0;
     this.enemiesRemainingToSpawn = [];
     
-    this.selectedItem = null; // { type: 'turret', key: 'basic' }
-    this.shopCategory = 'turret'; // 'turret', 'trap', 'defense', 'tool'
+    this.selectedItem = null;
+    this.shopCategory = 'turret';
     this.isDeleteMode = false;
     this.skipFirstDelete = false;
     this.isPopupOpen = false;
@@ -234,33 +242,15 @@ export class GameScene extends Phaser.Scene {
     this.add.rectangle(SCREEN_WIDTH/2, SCREEN_HEIGHT + 75, SCREEN_WIDTH, 150, COLORS.UI_BACKGROUND)
         .setScrollFactor(0).setDepth(1000);
     
-    // 1. Action Buttons (Top Left - High Visibility, Semi-Transparent)
-    this.fullscreenBtn = this.add.text(20, 20, ' 全屏 ', { 
-        fontSize: '32px', fill: '#fff', backgroundColor: '#0088ff', padding: { x: 15, y: 10 } 
-    })
-    .setScrollFactor(0).setDepth(2001).setInteractive({ useHandCursor: true })
-    .setAlpha(0.7) // Semi-transparent
-    .on('pointerdown', () => {
-        if (this.scale.isFullscreen) this.scale.stopFullscreen();
-        else this.scale.startFullscreen();
-    });
-
-    this.pauseBtn = this.add.text(140, 20, ' 暂停 ', { 
-        fontSize: '32px', fill: '#000', backgroundColor: '#ffff00', padding: { x: 15, y: 10 } 
-    })
-    .setScrollFactor(0).setDepth(2001).setInteractive({ useHandCursor: true })
-    .setAlpha(0.7) // Semi-transparent
-    .on('pointerdown', () => this.togglePause());
-
-    // 2. Stats (Top Right)
+    // 1. Stats (Above start wave button)
     const statStyle = { fontSize: '24px', fill: '#fff', stroke: '#000', strokeThickness: 4 };
-    this.goldText = this.add.text(SCREEN_WIDTH - 20, 20, `金币: ${this.gold}`, statStyle)
+    this.goldText = this.add.text(SCREEN_WIDTH - 20, SCREEN_HEIGHT - 40, `金币: ${this.gold}`, statStyle)
         .setOrigin(1, 0).setScrollFactor(0).setDepth(2001);
-    this.hpText = this.add.text(SCREEN_WIDTH - 20, 55, `生命: ${this.baseHp}`, statStyle)
+    this.hpText = this.add.text(SCREEN_WIDTH - 220, SCREEN_HEIGHT - 40, `生命: ${this.baseHp}`, statStyle)
         .setOrigin(1, 0).setScrollFactor(0).setDepth(2001);
-    this.waveText = this.add.text(SCREEN_WIDTH - 20, 90, `波数: ${this.waveIndex + 1}`, statStyle)
+    this.waveText = this.add.text(SCREEN_WIDTH - 420, SCREEN_HEIGHT - 40, `波数: ${this.waveIndex + 1}`, statStyle)
         .setOrigin(1, 0).setScrollFactor(0).setDepth(2001);
-    this.enemiesText = this.add.text(SCREEN_WIDTH - 20, 125, `剩余: 0`, { ...statStyle, fill: '#ffaaaa' })
+    this.enemiesText = this.add.text(SCREEN_WIDTH - 620, SCREEN_HEIGHT - 40, `剩余: 0`, { ...statStyle, fill: '#ffaaaa' })
         .setOrigin(1, 0).setScrollFactor(0).setDepth(2001);
 
     // 3. Shop Area (Bottom Left)
@@ -285,6 +275,23 @@ export class GameScene extends Phaser.Scene {
     })
     .setScrollFactor(0).setDepth(1001).setInteractive({ useHandCursor: true })
     .on('pointerdown', () => this.toggleDeleteMode(true));
+    catX += 130;
+
+    this.fullscreenBtn = this.add.text(catX, SCREEN_HEIGHT + 15, ' 全屏 ', { 
+        fontSize: '24px', fill: '#fff', backgroundColor: '#0088ff', padding: { x: 12, y: 8 } 
+    })
+    .setScrollFactor(0).setDepth(1001).setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => {
+        if (this.scale.isFullscreen) this.scale.stopFullscreen();
+        else this.scale.startFullscreen();
+    });
+    catX += 120;
+
+    this.pauseBtn = this.add.text(catX, SCREEN_HEIGHT + 15, ' 暂停 ', { 
+        fontSize: '24px', fill: '#000', backgroundColor: '#ffff00', padding: { x: 12, y: 8 } 
+    })
+    .setScrollFactor(0).setDepth(1001).setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => this.togglePause());
     
     this.shopContainer = this.add.container(20, SCREEN_HEIGHT + 75).setScrollFactor(0).setDepth(1001);
     this.updateShopUI();

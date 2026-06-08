@@ -16,6 +16,30 @@ export class Turret extends Entity {
     
     // Add HP (default 200 if not in stats)
     this.hp = this.stats.hp || 200;
+
+    this.createHeads();
+  }
+
+  createHeads() {
+    const numHeads = this.turretType === 'quad' ? 4 : this.turretType === 'octa' ? 8 : 0;
+    if (numHeads === 0) return;
+
+    this.heads = [];
+    const radius = 14;
+    for (let i = 0; i < numHeads; i++) {
+      const angle = (i / numHeads) * Math.PI * 2;
+      const head = this.scene.add.circle(
+        this.x + Math.cos(angle) * radius,
+        this.y + Math.sin(angle) * radius,
+        5,
+        this.stats.color
+      ).setDepth(this.depth + 1);
+      this.heads.push(head);
+    }
+
+    this.on('destroy', () => {
+      this.heads.forEach(h => h.destroy());
+    });
   }
 
   update(time, delta) {
@@ -25,6 +49,22 @@ export class Turret extends Entity {
     // Interval = 1000 / rate.
     if (time > this.lastFired + (1000 / this.stats.rate)) { 
        this.tryShoot(time);
+    }
+
+    this.updateHeadPositions();
+  }
+
+  updateHeadPositions() {
+    if (!this.heads) return;
+    const numHeads = this.heads.length;
+    const radius = 14;
+    const angle = this.rotation;
+    for (let i = 0; i < numHeads; i++) {
+      const headAngle = angle + (i / numHeads) * Math.PI * 2;
+      this.heads[i].setPosition(
+        this.x + Math.cos(headAngle) * radius,
+        this.y + Math.sin(headAngle) * radius
+      );
     }
   }
 
